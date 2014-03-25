@@ -1,3 +1,9 @@
+
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+
 /**
  * 
  */
@@ -13,11 +19,12 @@ public class Piece extends Message{
 	
 	public Piece (int value,
 				  int mLength, 
-				  String mType, 
+				  int mType, 
 				  int mPayload){
 		
 		super(length, type, payload);
 		this.setValue(value);
+		mType = value;
 		
 	}
 	
@@ -34,5 +41,22 @@ public class Piece extends Message{
 
 	public void setValue(int value) {
 		this.value = value;
+	}
+	
+	public void findPayload(String name, int offset){
+		RandomAccessFile f;
+		try {
+			f = new RandomAccessFile(name, null);
+			f.seek(offset);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
 	}
 }

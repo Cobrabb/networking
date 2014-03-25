@@ -7,35 +7,36 @@
  *
  */
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 
 public class ByteStream {
 	
 	//public static void main (String[] args) throws IOException{
-	public void toByteStream(String inputFile, 
-							 String outputFile) throws IOException{
+	public byte[] toByteStream(String inputFile) throws IOException{
 		
-		FileInputStream in = null;
-		FileOutputStream out = null;
+		//FileInputStream in = null;
+		//FileOutputStream out = null;
+		ByteArrayInputStream in = null;
+		ByteArrayOutputStream out = null;
 		
 		try{
+			/*
 			//in = new FileInputStream("Input.txt");
             //out = new FileOutputStream("Output.txt");
 			in = new FileInputStream(inputFile);
             out = new FileOutputStream(outputFile);
+            */
+			
+			in = new ByteArrayInputStream(inputFile.getBytes());
+			out = new ByteArrayOutputStream();
             int c;
             
             while ((c = in.read()) != -1) {
+            	//System.out.println("Byte " + in + " is :" + c);
                 out.write(c);
             }
             
-		}catch (FileNotFoundException e){
-			e.printStackTrace();
-			
-		}catch (IOException e) {
+		}catch (Exception e){
 			e.printStackTrace();
 			
 		}finally {
@@ -48,6 +49,7 @@ public class ByteStream {
                 out.close();
             }
         }
+		return out.toByteArray();
 	}
 
 }

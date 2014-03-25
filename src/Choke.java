@@ -1,6 +1,4 @@
-/**
- * 
- */
+
 
 /**
  * @author Ahmad Abukhalil
@@ -18,6 +16,7 @@ public class Choke extends Message{
 		
 		super(length, type, payload);
 		this.setValue(value);
+		payload = null;
 		
 	}
 	
@@ -25,6 +24,7 @@ public class Choke extends Message{
 		
 		super(length, type, payload);
 		value = 0;
+		payload = null;
 	}
 
 	public int getValue() {

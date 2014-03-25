@@ -1,6 +1,4 @@
-/**
- * 
- */
+
 
 /**
  * @author Ahmad Abukhalil
@@ -18,6 +16,7 @@ public class Uninterested extends Message{
 		
 		super(length, type, payload);
 		this.setValue(value);
+		mPayload = 0;
 		
 	}
 	
@@ -25,6 +24,7 @@ public class Uninterested extends Message{
 		
 		super(length, type, payload);
 		value = 3;
+		payload = null;
 	}
 
 

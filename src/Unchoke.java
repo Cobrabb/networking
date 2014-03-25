@@ -1,6 +1,4 @@
-/**
- * 
- */
+
 
 /**
  * @author Ahmad Abukhalil
@@ -18,6 +16,7 @@ public class Unchoke extends Message{
 		
 		super(length, type, payload);
 		this.setValue(value);
+		mPayload = 0;
 		
 	}
 	
@@ -25,6 +24,7 @@ public class Unchoke extends Message{
 		
 		super(length, type, payload);
 		value = 1;
+		payload = null;
 	}
 
 
