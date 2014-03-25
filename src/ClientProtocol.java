@@ -3,6 +3,9 @@ public class ClientProtocol{
 	private int peerNum;
 	private boolean interested;
 	private boolean choked;
+	private boolean requestOut;
+	private long nextInt;
+	private int havecount; //TODO: remove this once actual interest logic is in place
 
 	//enum for the Client State
 	private enum ClientState{
@@ -18,107 +21,155 @@ public class ClientProtocol{
 		myClientState = ClientState.NONE;
 		interested = false;
 		choked = true;
+		nextInt = 1000; //TODO: Unhardcode this
+		requestOut = false; 
+		havecount = 0; //TODO: remove this once actual interest logic is in place
+	}
+
+	public boolean isOpen(){
+		return myClientState==ClientState.SENTBITFIELD;
+	}
+
+	// method for message handling
+	public String processInput(String s){
+		if(s.equals("Handshake")){
+			return handShakeIn();
+		}
+		if(s.equals("Bitfield")){
+			return bitFieldIn();
+		}
+		if(s.equals("Choke")){
+			chokeIn();
+			return "";
+		}
+		if(s.equals("Unchoke")){
+			unchokeIn();
+			return "";
+		}
+		if(s.equals("Have")){
+			return haveIn();
+			
+		}
+		if(s.equals("Piece")){
+			return pieceIn();	
+		}
+		return "error";
+	}
+
+	//this happens every so often and does not block on server messages
+	public String tick(long interval){
+		if(interval>=nextInt){
+			nextInt += 500;
+			return "";
+		}
+		if(!choked&&!requestOut&&interested){
+			return sendRequest();
+		}
+		return "";
 	}
 
 	//methods for handling incoming messages
-	public void handShakeIn(){
+	public String handShakeIn(){
 		if(myClientState==ClientState.SENTHANDSHAKE){
 			//can accept a handshake in
-			System.out.println("Recieved a handshake message.");
-			sendBitField();
+			return sendBitField();
 		}
-		else{
-			//raise an error
-		}
+		return "error";
 	}	
 
-	public void bitFieldIn(){
+	public String bitFieldIn(){
 		if(myClientState==ClientState.SENTBITFIELD){
-			System.out.println("Recieved a bitfield message.");
-			//update bitfield of relevant peer	
-			//calc interested or not interested
+			//TODO: update bitfield of relevant peer	
 			calculateInterest();
-			System.out.println("Recieved a bitfield message.");
 			
 			if(interested){
-				sendInterested();
+				return sendInterested();
 			}
 			else{
-				sendNotInterested();
+				return sendNotInterested();
 			}
 
-			if(interested&&!choked){
-				sendRequest();
-			}
 		}
-		else{
-			//error
-		}
+		return "error";
 	}
 
-	public void haveIn(){
-		System.out.println("Recieved a have message.");
+	public String haveIn(){
 		//update bitfield of relevant peer
 		//calc interested or not interested
+		havecount++; //TODO: remove once real interested logic is in place
+		boolean oldint = interested; //this will still be necesary once real interested logic is in place
 		calculateInterest();
 
-		if(interested&&!choked){
-			sendRequest();
+
+		if(interested&&!oldint){
+			return sendInterested();
 		}
+		else if(!interested){
+			return sendNotInterested();
+		}
+
+		return "";
+
 		
 	}
 
-	public void chokedIn(){
-		System.out.println("Recieved a choked message.");
+	public void chokeIn(){
 		choked = true;
+		requestOut = false; //if a choke message comes in, the previously sent request is invalid
 	}
 
-	public void unchokedIn(){
-		System.out.println("Recieved a unchoked message.");
+	public void unchokeIn(){
 		choked = false;
 	}
 
-	public void pieceIn(){
-		System.out.println("Recieved a piece message.");
+	public String pieceIn(){
+		havecount--; //TODO: remove once real interested logic is in place
+		System.out.println("We got a piece!."); //TODO: replace with actual piece handling
+		requestOut = false;
+
+		calculateInterest();
+		if (!interested){
+			return "NotInterested";
+		}
+		return "";
 	}
 
 	//methods for sending messages
 	public void initiateContact(){
-		//use the peer num to get a handle on another peer
-		//send the peer a handshake message
 		sendHandShake();
 	}
 
 	public void sendHandShake(){
-		//create a handshake message
-		//send
-		System.out.println("Sending a handshake message from the client to peer "+peerNum);
 		myClientState = ClientState.SENTHANDSHAKE;
 	}
 
-	public void sendBitField(){
-		//send the bitField message...
-		//need a handle on a bitField, etc	
-		System.out.println("Sending a bitfield message from the client to peer "+peerNum);
+	public String sendBitField(){
+		//TODO: Actually construct a message which has a payload of a bitfield
 		myClientState = ClientState.SENTBITFIELD;
+		return "Bitfield";
 	}
 
-	public void sendRequest(){
-		//create a request message
-		//send
-		System.out.println("Sending a request message from the client to peer "+peerNum);
+	public String sendRequest(){
+		requestOut = true;	
+		return "Request";
 	}
 
-	public void sendInterested(){
-		System.out.println("Sending an interested message from the client to peer "+peerNum);
+	public String sendInterested(){
+		return "Interested";
 	}
 
-	public void sendNotInterested(){
-		System.out.println("Sending a not interested message from the client to peer "+peerNum);
+	public String sendNotInterested(){
+		return "NotInterested";
 	}
 
 	//methods for calculation
 	public void calculateInterest(){
-		interested = true;
+		//TODO: fix this message to have actual interested/not interested calculatons
+		if(havecount > 0){ 
+			interested = true;
+		}
+		else{
+			interested = false;
+		}
 	}
 }
