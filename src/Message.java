@@ -12,6 +12,45 @@ public class Message {
 	protected static byte[] payload;
 	//length = message length + 4
 	
+	protected static int peerID;
+	
+	public Message (byte[] m)
+	{
+		if(m[4].intValue() == 79)
+		{
+			peerID = m[31];
+			peerID += m[30]*8;
+			peerID += m[29]*16;
+			peerID += m[28]*24;
+			
+			length = 32;
+			type = 8;
+			payload = null;
+		}
+		else 
+		{
+			length = m[3].intValue();
+			length += m[2].intValue()*8;
+			length += m[1].intValue()*16;
+			length += m[0].intValue()*24;
+			
+			type = m[4].intValue();
+			
+			if(m.length-5 > 0)
+			{
+				payload = new byte[m.length-5];
+				
+				for(int i = 0; i < payload.length; i++)
+				{
+					payload[i] = m[i+5];
+				}
+			}
+			else
+				payload = null;
+		}
+		//if(m[4].intValue() < 8 && m[4].intValue() >= 0)
+	}
+	
 	public Message (int mLength, 
 					int mType, 
 					byte[] mPayload){
