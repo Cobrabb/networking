@@ -27,9 +27,10 @@ public class BitField{
 
 
 	//returns true if successful, false if not
-	public boolean toggleBit(int pos){
+	public boolean toggleBitOn(int pos){
 		//figure out which byte contains the relevant bit
 		int contentPos = pos/8;
+		int bitpos = pos%8;
 
 		if(contentPos >= content.size()){
 			//invalid input
@@ -37,11 +38,26 @@ public class BitField{
 		}
 		
 		//toggles it on, if it is off. The rest of the method needs to be written still
-		byte b = content.get(contentPos).byteValue();
-		b += Math.pow(2, pos%8);
-		content.set(contentPos, new Byte(b));
+		byte b = content.get(contentPos);
+		b |= 1 << bitpos;
+			
 		return true;
 	}
+
+	public boolean checkBit(int pos){
+		int contentPos = pos/8;
+		int bitpos = pos%8;
+		if(contentPos >= content.size()){
+			//invalid input
+			return false;
+		}
+		
+		byte b = content.get(contentPos);
+		int bit = b & (1<<bitpos);
+		return bit == 1;
+		
+	}
+	
 
 		
 

@@ -7,6 +7,11 @@ public class ServerProtocol{
 	private long unchokingInterval;
 	private long optimisticUnchokingInterval;
 	private int myPeerNum;
+	private BitField myBitField;
+	private int numberOfPreferredNeighbors;
+	private String fileName;
+	private int fileSize;
+	private int pieceSize;
 
 	private enum ServerState  {
 		NONE,
@@ -15,13 +20,20 @@ public class ServerProtocol{
 	};
 	private ServerState myServerState;
 
-	public ServerProtocol(int peernum){
+	public ServerProtocol(int peernum, int numprefneighbor, int unchoking, int opunchoking, String filename, int filesize, int piecesize){
 		myPeerNum = peernum;
+		numberOfPreferredNeighbors= numprefneighbor;
+		unchokingInterval = unchoking*1000;
+		optimisticUnchokingInterval = opunchoking*1000;
+		fileName = filename;
+		fileSize = filesize;
+		pieceSize = piecesize;
+	
+		int bitsize = (int)Math.ceil((double)fileSize/(double)(pieceSize));
+		myBitField = new BitField(bitsize);
+		peer1 = new ServerClient(0);
 		this.myServerState = ServerState.NONE;
 
-		//TODO: Unhardcode these values
-		unchokingInterval = 4000;
-		optimisticUnchokingInterval = 5000;
 	}
 
 	public boolean isOpen(){
@@ -64,11 +76,12 @@ public class ServerProtocol{
 
 	//message handling happens here
 	public Message processInput(Message in){
+		System.out.println("Got "+in.getType());
 		if(in.getType()==8){
 			return handShakeIn();
 		}	
 		else if(in.getType()==5){
-			return bitFieldIn();
+			return bitFieldIn(in);
 		}
 		else if(in.getType()==2){
 			interestedIn();
@@ -79,7 +92,7 @@ public class ServerProtocol{
 			return null;
 		}
 		else if(in.getType()==6){
-			return requestIn();
+			return requestIn(in);
 		}
 		return null;
 	}
@@ -93,7 +106,7 @@ public class ServerProtocol{
 		return null;
 	}
 
-	public Message  bitFieldIn(){ 
+	public Message  bitFieldIn(Message in){ 
 		//TODO: update bitfield for client, parse the payload of this message.
 		if(myServerState==ServerState.SENTHANDSHAKE){ //bitfield can only happen after handshake but before connection open
 			return sendBitField();	
@@ -114,7 +127,7 @@ public class ServerProtocol{
 	}
 
 
-	public Message requestIn(){
+	public Message requestIn(Message in){
 		if(myServerState==ServerState.CONNECTIONOPEN){
 	
 			if(!peer1.getChoked()){ //can't send the piece if choked
@@ -129,11 +142,7 @@ public class ServerProtocol{
 	//methods for sending messages
 	public Message sendHandShake(){
 		this.myServerState = ServerState.SENTHANDSHAKE;
-		// "HELL"
-		int i = 72<<24+69<<16+76<<8+76;
-		byte[] bytes = ByteBuffer.allocate(4).putInt(myPeerNum).array();		
-		//79 = "O"
-		return new Message(i,79, bytes);
+		return new Message(0, 8, null);
 	}
 
 	public Message sendHave(){
