@@ -1,10 +1,12 @@
 import java.util.*;
+import java.nio.ByteBuffer;
 public class ServerProtocol{
 	
 
 	private ServerClient peer1;
 	private long unchokingInterval;
 	private long optimisticUnchokingInterval;
+	private int myPeerNum;
 
 	private enum ServerState  {
 		NONE,
@@ -14,7 +16,7 @@ public class ServerProtocol{
 	private ServerState myServerState;
 
 	public ServerProtocol(int peernum){
-		peer1 = new ServerClient(peernum);
+		myPeerNum = peernum;
 		this.myServerState = ServerState.NONE;
 
 		//TODO: Unhardcode these values
@@ -27,7 +29,7 @@ public class ServerProtocol{
 	}
 
 	//things that happen often but do not block on the client happen here.
-	public String tick(long interval){ 
+	public Message tick(long interval){ 
 		Random rand = new Random();
 		if(myServerState == ServerState.SENTHANDSHAKE|| isOpen()){
 
@@ -57,46 +59,46 @@ public class ServerProtocol{
 	
 			
 		}
-		return "";
+		return null;
 	}
 
 	//message handling happens here
-	public String processInput(String s){
-		if(s.equals("Handshake")){
+	public Message processInput(Message in){
+		if(in.getType()==8){
 			return handShakeIn();
 		}	
-		else if(s.equals("Bitfield")){
+		else if(in.getType()==5){
 			return bitFieldIn();
 		}
-		else if(s.equals("Interested")){
+		else if(in.getType()==2){
 			interestedIn();
-			return "";
+			return null;
 		}
-		else if(s.equals("NotInterested")){
+		else if(in.getType()==3){
 			notInterestedIn();
-			return "";
+			return null;
 		}
-		else if(s.equals("Request")){
+		else if(in.getType()==6){
 			return requestIn();
 		}
-		return "error";
+		return null;
 	}
 
 	//methods for receiving messages
 
-	public String handShakeIn(){
+	public Message handShakeIn(){
 		if(myServerState==ServerState.NONE){ //handshake can only happen if nothing else has
 			return sendHandShake();
 		}
-		return "error";
+		return null;
 	}
 
-	public String  bitFieldIn(){ 
+	public Message  bitFieldIn(){ 
 		//TODO: update bitfield for client, parse the payload of this message.
 		if(myServerState==ServerState.SENTHANDSHAKE){ //bitfield can only happen after handshake but before connection open
 			return sendBitField();	
 		}
-		return "error";
+		return null;
 	}
 
 	public void interestedIn(){
@@ -112,53 +114,60 @@ public class ServerProtocol{
 	}
 
 
-	public String requestIn(){
+	public Message requestIn(){
 		if(myServerState==ServerState.CONNECTIONOPEN){
 	
 			if(!peer1.getChoked()){ //can't send the piece if choked
 				return sendPiece();
 			}
-			else return "";
+			else return null;
 		}
-		return "error";
+		return null;
 	}
 
 
 	//methods for sending messages
-	public String sendHandShake(){
+	public Message sendHandShake(){
 		this.myServerState = ServerState.SENTHANDSHAKE;
-		return "Handshake";
+		// "HELL"
+		int i = 72<<24+69<<16+76<<8+76;
+		byte[] bytes = ByteBuffer.allocate(4).putInt(myPeerNum).array();		
+		//79 = "O"
+		return new Message(i,79, bytes);
 	}
 
-	public String sendHave(){
+	public Message sendHave(){
 		//send a have message
 		this.myServerState = ServerState.CONNECTIONOPEN;
-		return "Have";
+		return new Message(1, 4, null);
 	}
 
-	public String sendChoke(){
+	public Message sendChoke(){
 		//send a choke message
-		return "Choke";
+		return new Message(1, 0, null);
 	}
 
-	public String sendUnchoke(){
+	public Message sendUnchoke(){
 		//send a unchoke message
-		return "Unchoke";
+		return new Message(1, 1, null);
 	}
 
-	public String sendPiece(){
+	public Message sendPiece(){
 		//send a piece message
-		return "Piece";
+
+		//TODO: actually allocate a piece and put it into the payload
+		return new Message(1, 7, null);
 	}
 
-	public String sendBitField(){
+	public Message sendBitField(){
 		//send a bitfield message
 
 		if(false){ //TODO: replace this with logic to see if the server actually has the files
 			this.myServerState = ServerState.CONNECTIONOPEN;
-			return "Bitfield";	
+			//TODO: have the server actually send its bitfield
+			return new Message(1, 5, null);	
 		}
-		return "";
+		return null;
 	}
 
 }

@@ -15,43 +15,49 @@ public class ClientThread {
 	ClientProtocol pro = new ClientProtocol(1);
 	pro.initiateContact();
 
-        try (
-            Socket echoSocket = new Socket(hostName, portNumber);
-            PrintWriter out =
-                new PrintWriter(echoSocket.getOutputStream(), true);
-            BufferedReader in =
-                new BufferedReader(
-                    new InputStreamReader(echoSocket.getInputStream()));
-            BufferedReader stdIn =
-                new BufferedReader(
-                    new InputStreamReader(System.in))
-        ) {
-            String line;
-	    String pass;
+	Socket clientSocket = null;
+	OutputStream o = null;
+	InputStream i = null;
+	DataOutputStream out = null;
+	DataInputStream in = null;
+	ByteArrayOutputStream baos = null;
+        try 
+         {
+	    clientSocket = new Socket(hostName, portNumber);
+	    o = clientSocket.getOutputStream();
+	    i = clientSocket.getInputStream();
+	    out = new DataOutputStream(o);
+	    in = new DataInputStream(i);
+	    baos = new ByteArrayOutputStream();
+	    Message pass;
             long openTime = System.currentTimeMillis();
-	    out.println("Handshake");
+
+	    //send original handshake
+
             while (true) {
-		if(in.ready()){
-			line = in.readLine();
-			System.out.println("The server says: "+line+".");
-			if(line==null){
+		if(in.available()>0){
+ 			byte buffer[] = new byte[1024];
+                        for(int s; (s=in.read(buffer)) != -1; ){
+                                baos.write(buffer, 0, s);
+                        }
+                        byte result[] = baos.toByteArray();
+			if(result==null){
 				break;
 			}
-			pass = pro.processInput(line);	
-			if(pass.equals("")){
+			Message m = new Message(result);
+			pass = pro.processInput(m);	
+			if(pass == null){
 				continue;
 			}	
-			else if(pass.equals("error")){
-				System.out.println("Client has an error handling input");
-				break;
-			}
-			out.println(pass);
+			byte[] b = pass.createMessage();
+			out.write(b, 0, b.length);
 		}
 		if(pro.isOpen()){
 			long interval = System.currentTimeMillis()-openTime;	
 			pass = pro.tick(interval);	
-			if(!pass.equals("")){
-				out.println(pass);
+			if(pass != null){
+				byte[] b = pass.createMessage();
+				out.write(b, 0, b.length);
 			}
 		}
             }

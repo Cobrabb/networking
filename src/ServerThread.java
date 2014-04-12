@@ -1,5 +1,6 @@
 import java.net.*;
 import java.io.*;
+import java.nio.ByteBuffer;
 
 public class ServerThread {
     public static void main(String[] args) throws IOException {
@@ -11,41 +12,49 @@ public class ServerThread {
         
         int portNumber = Integer.parseInt(args[0]);
 	ServerProtocol pro = new ServerProtocol(1);
-        
-        try (
-            ServerSocket serverSocket =
-                new ServerSocket(Integer.parseInt(args[0]));
-            Socket clientSocket = serverSocket.accept();     
-            PrintWriter out =
-                new PrintWriter(clientSocket.getOutputStream(), true);                   
-            BufferedReader in = new BufferedReader(
-                new InputStreamReader(clientSocket.getInputStream()));
-        ) {
-            String line;
-	    String pass;
+      
+	ServerSocket serverSocket = null; 
+	Socket clientSocket = null;
+        OutputStream o = null;
+	InputStream i = null; 
+        DataOutputStream out = null;
+	DataInputStream in = null;
+	ByteArrayOutputStream baos = null;
+        try 
+         {
+            serverSocket = new ServerSocket(Integer.parseInt(args[0]));
+            clientSocket = serverSocket.accept();     
+	    o = clientSocket.getOutputStream();
+	    i = clientSocket.getInputStream();
+	    out = new DataOutputStream(o);
+            in = new DataInputStream(i); 
+	    baos = new ByteArrayOutputStream();
+	    Message pass;
 	    long openTime = System.currentTimeMillis();
             while (true) {
-		if(in.ready()){
-			line = in.readLine();
-			if(line==null){
+		if(in.available()>0){
+			byte buffer[] = new byte[1024];
+			for(int s; (s=in.read(buffer)) != -1; ){
+				baos.write(buffer, 0, s);
+			}
+			byte result[] = baos.toByteArray();
+			if(result==null){
 				break;
 			}
-			System.out.println("The client says: "+line+".");
-			pass = pro.processInput(line);
-			if(pass.equals("")){
+			Message m = new Message(result);
+			pass = pro.processInput(m);
+			if(pass == null){
 				continue;
 			}
-			else if(pass.equals("error")){
-				System.out.println("The server could not process the input: "+line);
-				break;
-			}
-			out.println(pass);
+			byte[] b = pass.createMessage();
+			out.write(b, 0, b.length);
 		}
 		//all logic which does not block for input
 		long interval = System.currentTimeMillis()-openTime;
 		pass = pro.tick(interval);	
-		if(!pass.equals("")){	
-			out.println(pass);
+		if(pass != null){	
+			byte[] b = pass.createMessage();
+			out.write(b, 0, b.length);
 		}
             }
         } catch (IOException e) {
