@@ -16,12 +16,12 @@ public class Message {
 	
 	public Message (byte[] m)
 	{
-		if(m[4].intValue() == 79)
-		{
-			peerID = m[31];
-			peerID += m[30]*8;
-			peerID += m[29]*16;
-			peerID += m[28]*24;
+		if(m[4] == 79)
+		{			
+			for (int i = 28; i < m.length; i++)
+			{
+			   peerID = (peerID << 8) + (m[i] & 0xff);
+			}
 			
 			length = 32;
 			type = 8;
@@ -29,12 +29,17 @@ public class Message {
 		}
 		else 
 		{
-			length = m[3].intValue();
-			length += m[2].intValue()*8;
-			length += m[1].intValue()*16;
-			length += m[0].intValue()*24;
+			length = m[3];
+			length += m[2]*8;
+			length += m[1]*16;
+			length += m[0]*24;
 			
-			type = m[4].intValue();
+			for (int i = 0; i < 4; i++)
+			{
+			   length = (length << 8) + (m[i] & 0xff);
+			}
+			
+			type = m[4];
 			
 			if(m.length-5 > 0)
 			{
@@ -48,7 +53,6 @@ public class Message {
 			else
 				payload = null;
 		}
-		//if(m[4].intValue() < 8 && m[4].intValue() >= 0)
 	}
 	
 	public Message (int mLength, 
@@ -87,6 +91,11 @@ public class Message {
 	
 	public void setPayload(byte[] mPayload){
 		payload = mPayload;
+	}
+	
+	public int getPeerID()
+	{
+		return peerID;
 	}
 	
 	public byte[] createMessage(){

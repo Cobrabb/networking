@@ -1,6 +1,8 @@
+import java.nio.ByteBuffer;
+
 public class ClientProtocol{
 
-	private int peerNum;
+	private int myPeerNum;
 	private boolean interested;
 	private boolean choked;
 	private boolean requestOut;
@@ -17,7 +19,7 @@ public class ClientProtocol{
 	
 	
 	public ClientProtocol(int peerNum){
-		this.peerNum = peerNum;
+		this.myPeerNum = peerNum;
 		myClientState = ClientState.NONE;
 		interested = false;
 		choked = true;
@@ -31,53 +33,53 @@ public class ClientProtocol{
 	}
 
 	// method for message handling
-	public String processInput(String s){
-		if(s.equals("Handshake")){
+	public Message processInput(Message in){
+		if(in.getType()==8){
 			return handShakeIn();
 		}
-		if(s.equals("Bitfield")){
+		if(in.getType()==5){
 			return bitFieldIn();
 		}
-		if(s.equals("Choke")){
+		if(in.getType()==0){
 			chokeIn();
-			return "";
+			return null;
 		}
-		if(s.equals("Unchoke")){
+		if(in.getType()==1){
 			unchokeIn();
-			return "";
+			return null;
 		}
-		if(s.equals("Have")){
+		if(in.getType()==4){
 			return haveIn();
 			
 		}
-		if(s.equals("Piece")){
+		if(in.getType()==7){
 			return pieceIn();	
 		}
-		return "error";
+		return null;
 	}
 
 	//this happens every so often and does not block on server messages
-	public String tick(long interval){
+	public Message tick(long interval){
 		if(interval>=nextInt){
 			nextInt += 500;
-			return "";
+			return null;
 		}
 		if(!choked&&!requestOut&&interested){
 			return sendRequest();
 		}
-		return "";
+		return null;
 	}
 
 	//methods for handling incoming messages
-	public String handShakeIn(){
+	public Message handShakeIn(){
 		if(myClientState==ClientState.SENTHANDSHAKE){
 			//can accept a handshake in
 			return sendBitField();
 		}
-		return "error";
+		return null;
 	}	
 
-	public String bitFieldIn(){
+	public Message bitFieldIn(){
 		if(myClientState==ClientState.SENTBITFIELD){
 			//TODO: update bitfield of relevant peer	
 			calculateInterest();
@@ -90,10 +92,10 @@ public class ClientProtocol{
 			}
 
 		}
-		return "error";
+		return null; 
 	}
 
-	public String haveIn(){
+	public Message  haveIn(){
 		//update bitfield of relevant peer
 		//calc interested or not interested
 		havecount++; //TODO: remove once real interested logic is in place
@@ -108,7 +110,7 @@ public class ClientProtocol{
 			return sendNotInterested();
 		}
 
-		return "";
+		return null;
 
 		
 	}
@@ -122,49 +124,54 @@ public class ClientProtocol{
 		choked = false;
 	}
 
-	public String pieceIn(){
+	public Message pieceIn(){
 		havecount--; //TODO: remove once real interested logic is in place
 		System.out.println("We got a piece!."); //TODO: replace with actual piece handling
 		requestOut = false;
 
 		calculateInterest();
 		if (!interested){
-			return "NotInterested";
+			return new Message(1, 3, null);
 		}
-		return "";
+		return null;
 	}
 
 	//methods for sending messages
-	public void initiateContact(){
-		sendHandShake();
+	public Message initiateContact(){
+		return sendHandShake();
 	}
 
-	public void sendHandShake(){
+	public Message sendHandShake(){
 		myClientState = ClientState.SENTHANDSHAKE;
+  		 // "HELL"
+                int i = 72<<24+69<<16+76<<8+76;
+                byte[] bytes = ByteBuffer.allocate(4).putInt(myPeerNum).array();
+                //79 = "O"
+                return new Message(i,79, bytes);
 	}
 
-	public String sendBitField(){
-		//TODO: Actually construct a message which has a payload of a bitfield
+	public Message sendBitField(){
 		myClientState = ClientState.SENTBITFIELD;
-		return "Bitfield";
+		//TODO: Actually construct a message which has a payload of a bitfield, rather than null
+		return new Message(1, 5, null);
 	}
 
-	public String sendRequest(){
+	public Message sendRequest(){
 		requestOut = true;	
-		return "Request";
+		return new Message(1, 6, null);
 	}
 
-	public String sendInterested(){
-		return "Interested";
+	public Message sendInterested(){
+		return new Message(1, 2, null);
 	}
 
-	public String sendNotInterested(){
-		return "NotInterested";
+	public Message sendNotInterested(){
+		return new Message(1, 3, null);
 	}
 
 	//methods for calculation
 	public void calculateInterest(){
-		//TODO: fix this message to have actual interested/not interested calculatons
+		//TODO: fix this to have actual interested/not interested calculatons
 		if(havecount > 0){ 
 			interested = true;
 		}
