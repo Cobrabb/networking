@@ -1,4 +1,5 @@
 
+import java.util.concurrent.*;
 import java.io.*;
 
 public class PeerThread extends Thread{
@@ -10,11 +11,14 @@ public class PeerThread extends Thread{
 	private String fileName;
 	private int fileSize;
 	private int pieceSize;
+	private int portNum;
+	private String hostName;
 
 	//Client and Server
-	private Client client;	
+	private ServerThread server;
+	private ClientThread client;
 
-	public PeerThread(int num, File common){
+	public PeerThread(int num, File common, int portnum, String host){
 		this.peerNum = num;
 		
 		//read in the properties from common.cfg.
@@ -52,6 +56,12 @@ public class PeerThread extends Thread{
 		fileSize = Integer.parseInt(params[4]);	
 		pieceSize = Integer.parseInt(params[5]);	
 
+		portNum = portnum;
+		hostName = host;
+
+		server = new ServerThread(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, portNum);	
+		client = new ClientThread(peerNum, fileSize, pieceSize, portNum, hostName);
+
 
 	}
 
@@ -87,13 +97,9 @@ public class PeerThread extends Thread{
 	//main method for the thread
 	//required by Thread
 	public void run(){
-		try{
 
-			Thread.sleep(1000);
-		}
-		catch(InterruptedException e){
-			e.printStackTrace();
-		}
-	
+		ExecutorService executor = Executors.newCachedThreadPool();
+		executor.execute(server);
+		executor.execute(client);
 	}
 }

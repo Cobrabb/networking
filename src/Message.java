@@ -1,4 +1,4 @@
-
+import java.nio.ByteBuffer;
 
 /**
  * @author Ahmad Abukhalil
@@ -29,10 +29,6 @@ public class Message {
 		}
 		else 
 		{
-			length = m[3];
-			length += m[2]*8;
-			length += m[1]*16;
-			length += m[0]*24;
 			
 			for (int i = 0; i < 4; i++)
 			{
@@ -99,18 +95,35 @@ public class Message {
 	}
 	
 	public byte[] createMessage(){
-		byte[] b = new byte[length+4];
-	
-		b[0] = (byte) (length >> 24);
-		b[1] = (byte) (length >> 16);
-		b[2] = (byte) (length >> 8);
-		b[3] = (byte) (length /*>> 0*/);
-		b[4] = (byte)type;
+		byte[] b;
+		if(type == 8){
+			b = new byte[32];
+			byte[] hello = "HELLO".getBytes();
+			for(int i=0; i<5; i++){
+				b[i] = hello[i];
+			}
 		
-		for(int i = 0; i < payload.length; i++){
-			b[i+5] = payload[i];
+			byte[] peer = ByteBuffer.allocate(4).putInt(peerID).array();	
+			for(int i=0; i<4; i++){
+				b[i+28] = peer[i];
+			}
+			
 		}
-
+		else{
+			b = new byte[length+4];
+	
+			b[0] = (byte) (length >> 24);
+			b[1] = (byte) (length >> 16);
+			b[2] = (byte) (length >> 8);
+			b[3] = (byte) (length /*>> 0*/);
+			b[4] = (byte)type;
+	
+			if(payload!=null){
+				for(int i = 0; i < payload.length; i++){
+					b[i+5] = payload[i];
+				}
+			}
+		}
 		/*
 		String l = String.valueOf(length);
 		String t = String.valueOf(type);

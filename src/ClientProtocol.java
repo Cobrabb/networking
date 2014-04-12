@@ -7,6 +7,8 @@ public class ClientProtocol{
 	private boolean choked;
 	private boolean requestOut;
 	private long nextInt;
+	private int fileSize;
+	private int pieceSize;
 	private int havecount; //TODO: remove this once actual interest logic is in place
 
 	//enum for the Client State
@@ -18,12 +20,15 @@ public class ClientProtocol{
 	private ClientState myClientState;
 	
 	
-	public ClientProtocol(int peerNum){
+	public ClientProtocol(int peerNum, int filesize, int piecesize){
 		this.myPeerNum = peerNum;
 		myClientState = ClientState.NONE;
 		interested = false;
 		choked = true;
 		nextInt = 1000; //TODO: Unhardcode this
+		pieceSize = piecesize;
+		fileSize = filesize;
+		
 		requestOut = false; 
 		havecount = 0; //TODO: remove this once actual interest logic is in place
 	}
@@ -34,11 +39,12 @@ public class ClientProtocol{
 
 	// method for message handling
 	public Message processInput(Message in){
+		System.out.println("Got "+in.getType());
 		if(in.getType()==8){
 			return handShakeIn();
 		}
 		if(in.getType()==5){
-			return bitFieldIn();
+			return bitFieldIn(in);
 		}
 		if(in.getType()==0){
 			chokeIn();
@@ -49,11 +55,11 @@ public class ClientProtocol{
 			return null;
 		}
 		if(in.getType()==4){
-			return haveIn();
+			return haveIn(in);
 			
 		}
 		if(in.getType()==7){
-			return pieceIn();	
+			return pieceIn(in);	
 		}
 		return null;
 	}
@@ -79,7 +85,7 @@ public class ClientProtocol{
 		return null;
 	}	
 
-	public Message bitFieldIn(){
+	public Message bitFieldIn(Message in){
 		if(myClientState==ClientState.SENTBITFIELD){
 			//TODO: update bitfield of relevant peer	
 			calculateInterest();
@@ -95,7 +101,7 @@ public class ClientProtocol{
 		return null; 
 	}
 
-	public Message  haveIn(){
+	public Message  haveIn(Message in){
 		//update bitfield of relevant peer
 		//calc interested or not interested
 		havecount++; //TODO: remove once real interested logic is in place
@@ -124,7 +130,7 @@ public class ClientProtocol{
 		choked = false;
 	}
 
-	public Message pieceIn(){
+	public Message pieceIn(Message in){
 		havecount--; //TODO: remove once real interested logic is in place
 		System.out.println("We got a piece!."); //TODO: replace with actual piece handling
 		requestOut = false;
@@ -143,11 +149,8 @@ public class ClientProtocol{
 
 	public Message sendHandShake(){
 		myClientState = ClientState.SENTHANDSHAKE;
-  		 // "HELL"
-                int i = 72<<24+69<<16+76<<8+76;
-                byte[] bytes = ByteBuffer.allocate(4).putInt(myPeerNum).array();
                 //79 = "O"
-                return new Message(i,79, bytes);
+                return new Message(0,8, null);
 	}
 
 	public Message sendBitField(){
