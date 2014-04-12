@@ -54,15 +54,18 @@ public class RandomAccess {
 		/* Method takes String that corresponds to file name, and using  a start and stop
 		   bit of byte array to copy particular bytes to file */
 		
+		//number of bytes to write
+		int numOfBytes = (stop - start) + 1;
+		
 		//Create instance of RAF
 		RandomAccessFile raf = new RandomAccessFile(fileName,"rw");
 		
-		//Write values of byte array to file 
-		for(int i = start; i < stop; i++){
-			raf.write(message[i]);
-		}
+		//Sets the file-pointer offset to start value
+		//raf.seek(start);
+		
+		//Write values of byte array to file with offset
+		raf.write(message,start,numOfBytes);
 		
 		raf.close();
 	}
-
 }
