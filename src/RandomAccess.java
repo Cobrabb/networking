@@ -50,22 +50,46 @@ public class RandomAccess {
 		RAF.close();
 	}
 	*/
-	public void RAF(String fileName, byte[] message, int start, int stop) throws IOException{
+	
+	public void RAF(String fileName, byte[] message, int startSeek) throws IOException{
 		/* Method takes String that corresponds to file name, and using  a start and stop
 		   bit of byte array to copy particular bytes to file */
 		
-		//number of bytes to write
-		int numOfBytes = (stop - start) + 1;
+		//constructor filename, piecesize
+		//startseek = index*piecesize
+		//
 		
 		//Create instance of RAF
 		RandomAccessFile raf = new RandomAccessFile(fileName,"rw");
 		
 		//Sets the file-pointer offset to start value
-		//raf.seek(start);
+		raf.seek(startSeek);
 		
 		//Write values of byte array to file with offset
-		raf.write(message,start,numOfBytes);
+		raf.write(message, 0, message.length - 1);
 		
 		raf.close();
+		
+		/*	Method Testing
+		 //Create instance of RAF
+		RandomAccessFile RAF = new RandomAccessFile("RAF.dat","rw");
+		RandomAccess raf = new RandomAccess();
+		
+		//Write values of byte array to file with offset
+
+		/*	
+		RAF.seek(10);
+		RAF.write(b, 0, 1);
+		RAF.write(b, 1, 1);
+		RAF.write(b, 0, 1);
+		RAF.write(b, 25, 1);
+		//RAF.seek(2);
+		RAF.write(b, 24, 1);
+		
+		raf.RAF("RAF.dat", b, 20);
+		raf.RAF("RAF.dat", b, 56);
+		
+		RAF.close();
+		*/
 	}
 }

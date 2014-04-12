@@ -6,7 +6,7 @@ import java.util.concurrent.*;
 public class Test{
 
 
-	public static void main(String[] args){
+	public static void main(String[] args) throws IOException{
 		/*
 		ExecutorService ex = Executors.newCachedThreadPool();
 		File f = new File("Common.cfg");
@@ -62,5 +62,32 @@ public class Test{
 			e.printStackTrace();
 		}
 		*/
+		byte[] b = new byte[26];
+		for (int i = 0; i < b.length; i++){
+			//putting alphabet into array
+			b[i]= (byte) (i+65);
+			//System.out.print(b[i]+" ");
+		}
+		
+		
+		//Create instance of RAF
+		RandomAccessFile RAF = new RandomAccessFile("RAF.dat","rw");
+		RandomAccess raf = new RandomAccess();
+		
+		//Write values of byte array to file with offset
+
+		/*
+		RAF.seek(10);
+		RAF.write(b, 0, 1);
+		RAF.write(b, 1, 1);
+		RAF.write(b, 0, 1);
+		RAF.write(b, 25, 1);
+		//RAF.seek(2);
+		RAF.write(b, 24, 1);
+		 */
+		raf.RAF("RAF.dat", b, 20);
+		raf.RAF("RAF.dat", b, 56);
+		
+		RAF.close();
 	}
 }
