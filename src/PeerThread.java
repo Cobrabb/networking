@@ -1,6 +1,14 @@
 
 import java.util.concurrent.*;
 import java.io.*;
+import java.util.ArrayList;
+
+class PeerInfo{
+	public int peerNum;
+	public String hostName;
+	public int portNum;
+	public boolean hasFile;
+}
 
 public class PeerThread extends Thread{
 
@@ -11,20 +19,24 @@ public class PeerThread extends Thread{
 	private String fileName;
 	private int fileSize;
 	private int pieceSize;
+	private ArrayList<PeerInfo> peers;
+	private boolean hasFile;
 	private int portNum;
-	private String hostName;
+	private BitField myBitField;
 
 	//Client and Server
 	private ServerThread server;
-	private ClientThread client;
+	private ArrayList<ClientThread> clients;
 
-	public PeerThread(int num, File common, int portnum, String host){
+	public PeerThread(int num, File common, File peerInfo){
 		this.peerNum = num;
 		
 		//read in the properties from common.cfg.
 		BufferedReader br = null;		
 		String[] params = new String[6];
+		
 		String line;
+		peers = new ArrayList<PeerInfo>();
 
 		try{
 
@@ -35,6 +47,26 @@ public class PeerThread extends Thread{
 	
 			}
 			
+
+			br.close();
+			br = new BufferedReader(new FileReader(peerInfo));
+		
+			for(int i=0; (line=br.readLine()) != null; i++){
+				String[] params2 = line.split("\\s");
+				PeerInfo p = new PeerInfo();
+				p.peerNum = Integer.parseInt(params2[0]);
+				p.hostName = params2[1];
+				p.portNum = Integer.parseInt(params2[2]);
+
+				if(params2[3] == "1") p.hasFile = true;
+				else p.hasFile = false;
+				
+				if(p.peerNum == this.peerNum){
+					this.hasFile = p.hasFile;
+					this.portNum = p.portNum;
+				}
+				else peers.add(p);	
+			}
 
 			br.close();
 		}
@@ -56,13 +88,15 @@ public class PeerThread extends Thread{
 		fileSize = Integer.parseInt(params[4]);	
 		pieceSize = Integer.parseInt(params[5]);	
 
-		portNum = portnum;
-		hostName = host;
+		myBitField = new BitField((int)Math.ceil((float)fileSize/(float)pieceSize), hasFile);
 
-		server = new ServerThread(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, portNum);	
-		client = new ClientThread(peerNum, fileSize, pieceSize, portNum, hostName);
+		server = new ServerThread(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, portNumi, myBitField);	
 
-
+		clients = new ArrayList<ClientThread>();
+		for(int i=0; i<peers.size(); i++){
+			ClientThread c = new ClientThread(peers.get(i).peerNum, fileSize, pieceSize, peers.get(i).portNum, peers.get(i).hostName);
+			clients.add(c);
+		}
 	}
 
 	//getters; setters should not be allowed for the default properties
@@ -100,6 +134,9 @@ public class PeerThread extends Thread{
 
 		ExecutorService executor = Executors.newCachedThreadPool();
 		executor.execute(server);
-		executor.execute(client);
+		for(int i=0; i<clients.size(); i++){
+			executor.execute(clients.get(i));
+		}
+		
 	}
 }

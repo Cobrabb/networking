@@ -7,13 +7,35 @@ public class BitField{
 	ArrayList<Byte> content;
 
 	public BitField(int size){
+		this(size, false);
+	}
+
+	public BitField(int size, boolean has){
 		this.size = size;
 		this.content = new ArrayList<Byte>();
-		
-		byte b = 0;	
+		byte b;
+
+		if(!has)	
+			b = 0;	
+		else 
+			b = -128;
+
 		for(int i=0; i<size; i++){
 			content.add(new Byte(b));
 		}
+		
+	}
+
+	public BitField(byte[] b){
+
+		this.size = b.length;
+		this.content = new ArrayList<Byte>();
+		
+		for(int i=0; i<size; i++){
+			content.add(new Byte(b[i]));
+		}
+
+
 	}
 
 	public String toString(){

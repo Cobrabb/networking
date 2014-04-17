@@ -18,8 +18,9 @@ public class ClientThread extends Thread{
 	}
 
     public  void run() {
-        
 	ClientProtocol pro = new ClientProtocol(peerNum, fileSize, pieceSize);
+	Message handshake = pro.initiateContact();
+	byte[] c = handshake.createMessage();
 
 	Socket clientSocket = null;
 	OutputStream o = null;
@@ -27,50 +28,48 @@ public class ClientThread extends Thread{
 	DataOutputStream out = null;
 	DataInputStream in = null;
 	ByteArrayOutputStream baos = null;
-        try 
-         {
-	    clientSocket = new Socket(host, portNum);
-	    o = clientSocket.getOutputStream();
-	    i = clientSocket.getInputStream();
-	    out = new DataOutputStream(o);
-	    in = new DataInputStream(i);
-	    baos = new ByteArrayOutputStream();
-	    Message pass;
-            long openTime = System.currentTimeMillis();
+	while(true){
+      	  try 
+       	  {
+		    clientSocket = new Socket(host, portNum);
+		    o = clientSocket.getOutputStream();
+		    i = clientSocket.getInputStream();
+		    out = new DataOutputStream(o);
+		    in = new DataInputStream(i);
+		    baos = new ByteArrayOutputStream();
+		    Message pass;
+        	    long openTime = System.currentTimeMillis();
+	
+		    //send original handshake
+		    out.write(c, 0, c.length);
 
-	    //send original handshake
-	    Message handshake = pro.initiateContact();
-        byte[] c = handshake.createMessage();
-	out.write(c, 0, c.length);
-
-            while (true) {
-		if(in.available()>0){
- 			byte buffer[] = new byte[in.available()];
-			in.readFully(buffer);
-			Message m = new Message(buffer);
-			pass = pro.processInput(m);	
-			if(pass == null){
-				continue;
-			}	
-			byte[] b = pass.createMessage();
-			out.write(b, 0, b.length);
-		}
-		if(pro.isOpen()){
-			long interval = System.currentTimeMillis()-openTime;	
-			pass = pro.tick(interval);	
-			if(pass != null){
+        	    while (true) {
+			if(in.available()>0){
+ 				byte buffer[] = new byte[in.available()];
+				in.readFully(buffer);
+				Message m = new Message(buffer);
+				pass = pro.processInput(m);	
+				if(pass == null){
+					continue;
+				}	
 				byte[] b = pass.createMessage();
 				out.write(b, 0, b.length);
 			}
-		}
-            }
-        } catch (UnknownHostException e) {
-            System.err.println("Don't know about host " + host);
-            System.exit(1);
-        } catch (IOException e) {
-            System.err.println("Couldn't get I/O for the connection to " +
-                host);
-            System.exit(1);
-        } 
-    }
+			if(pro.isOpen()){
+				long interval = System.currentTimeMillis()-openTime;	
+				pass = pro.tick(interval);	
+				if(pass != null){
+					byte[] b = pass.createMessage();
+					out.write(b, 0, b.length);
+				}
+			}
+           	 }
+       	 } catch (UnknownHostException e) {
+        	    System.err.println("Don't know about host " + host);
+       	 } catch (IOException e) {
+      	      System.err.println("Couldn't get I/O for the connection to " +
+      	          host);
+     	   } 
+  	  }	
+	}
 }
