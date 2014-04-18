@@ -39,7 +39,7 @@ public class ClientProtocol{
 
 	// method for message handling
 	public Message processInput(Message in){
-		System.out.println("Got "+in.getType());
+		System.out.println("Got: "+in.getType());
 		if(in.getType()==8){
 			return handShakeIn();
 		}
@@ -132,7 +132,13 @@ public class ClientProtocol{
 
 	public Message pieceIn(Message in){
 		havecount--; //TODO: remove once real interested logic is in place
-		System.out.println("We got a piece!."); //TODO: replace with actual piece handling
+		//TODO: replace with actual piece handling
+		System.out.print("Got a message! Here it is: ");
+		for(int i=0; i<in.getPayload().length; i++){
+			System.out.print((char)in.getPayload()[i]);
+		}
+		System.out.println();
+
 		requestOut = false;
 
 		calculateInterest();
@@ -149,8 +155,14 @@ public class ClientProtocol{
 
 	public Message sendHandShake(){
 		myClientState = ClientState.SENTHANDSHAKE;
-                //79 = "O"
-                return new Message(0,8, null);
+		
+		byte[] b = new byte[27];
+		byte[] pnum = ByteBuffer.allocate(4).putInt(myPeerNum).array();
+		for(int i=0; i<4; i++){
+			b[23+i] = pnum[i];
+		}
+		
+                return new Message(0,8, b);
 	}
 
 	public Message sendBitField(){

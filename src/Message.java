@@ -104,8 +104,10 @@ public class Message {
 			}
 		
 			byte[] peer = ByteBuffer.allocate(4).putInt(peerID).array();	
-			for(int i=0; i<4; i++){
-				b[i+28] = peer[i];
+			if(payload!=null){
+				for(int i=0; i<27; i++){
+					b[i+5] = payload[i];
+				}
 			}
 			
 		}

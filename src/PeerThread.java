@@ -25,7 +25,7 @@ public class PeerThread extends Thread{
 	private BitField myBitField;
 
 	//Client and Server
-	private ServerThread server;
+	private BigServerThread server;
 	private ArrayList<ClientThread> clients;
 
 	public PeerThread(int num, File common, File peerInfo){
@@ -84,13 +84,17 @@ public class PeerThread extends Thread{
 		numberOfPreferredNeighbors = Integer.parseInt(params[0]);	
 		unchokingInterval = Integer.parseInt(params[1]);	
 		optimisticUnchokingInterval = Integer.parseInt(params[2]);
-		fileName = params[3];	
+		//TODO: remove this testing stuff
+		if(peerNum==1001) fileName = "ABC";
+		else if(peerNum==1002) fileName = "abc";
+		else if(peerNum==1003) fileName = "123";
+		else fileName = params[3];	
 		fileSize = Integer.parseInt(params[4]);	
 		pieceSize = Integer.parseInt(params[5]);	
 
 		myBitField = new BitField((int)Math.ceil((float)fileSize/(float)pieceSize), hasFile);
 
-		server = new ServerThread(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, portNumi, myBitField);	
+		server = new BigServerThread(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, portNum, myBitField);	
 
 		clients = new ArrayList<ClientThread>();
 		for(int i=0; i<peers.size(); i++){

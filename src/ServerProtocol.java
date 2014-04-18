@@ -3,15 +3,17 @@ import java.nio.ByteBuffer;
 public class ServerProtocol{
 	
 
-	private ServerClient peer1;
 	private long unchokingInterval;
 	private long optimisticUnchokingInterval;
-	private int myPeerNum;
-	private BitField myBitField;
+	private int peerNum;
 	private int numberOfPreferredNeighbors;
 	private String fileName;
 	private int fileSize;
 	private int pieceSize;
+	private BitField myBitField;
+	private boolean choked; //whether or not the peer is choked
+	private boolean interested; //whether or not the peer is interested in me
+	private boolean chokechange;
 
 	private enum ServerState  {
 		NONE,
@@ -20,19 +22,21 @@ public class ServerProtocol{
 	};
 	private ServerState myServerState;
 
-	public ServerProtocol(int peernum, int numprefneighbor, int unchoking, int opunchoking, String filename, int filesize, int piecesize){
-		myPeerNum = peernum;
+	public ServerProtocol(int peernum, int numprefneighbor, int unchoking, int opunchoking, String filename, int filesize, int piecesize, BitField b){
+		peerNum = peernum;
 		numberOfPreferredNeighbors= numprefneighbor;
 		unchokingInterval = unchoking*1000;
 		optimisticUnchokingInterval = opunchoking*1000;
 		fileName = filename;
 		fileSize = filesize;
 		pieceSize = piecesize;
+		myBitField = b;
 	
-		int bitsize = (int)Math.ceil((double)fileSize/(double)(pieceSize));
-		myBitField = new BitField(bitsize);
-		peer1 = new ServerClient(0);
 		this.myServerState = ServerState.NONE;
+
+		choked = true;
+		interested = false;
+		chokechange = false;
 
 	}
 
@@ -45,7 +49,7 @@ public class ServerProtocol{
 		Random rand = new Random();
 		if(myServerState == ServerState.SENTHANDSHAKE|| isOpen()){
 
-			if(rand.nextInt(2000000)==75){ //TODO: replace with real logic to check to see if a piece has come in.
+			if(rand.nextInt(20000)==75){ //TODO: replace with real logic to check to see if a piece has come in.
 				return sendHave();
 			}
 
@@ -59,12 +63,12 @@ public class ServerProtocol{
 		
 				//currently, the server just toggles every interval 
 				//TODO: replace with real logic for checking for choked/unchoked
-				if(peer1.getChoked()&&peer1.getInterested()){
-					peer1.setChoked(false);
+				if(choked&&interested){
+					choked = false;
 					return sendUnchoke();
 				}
-				else if(!peer1.getChoked()){
-					peer1.setChoked(true);
+				else if(!choked){
+					choked = true;
 					return sendChoke();
 				}
 			}
@@ -76,7 +80,6 @@ public class ServerProtocol{
 
 	//message handling happens here
 	public Message processInput(Message in){
-		System.out.println("Got "+in.getType());
 		if(in.getType()==8){
 			return handShakeIn();
 		}	
@@ -116,13 +119,13 @@ public class ServerProtocol{
 
 	public void interestedIn(){
 		if(myServerState==ServerState.CONNECTIONOPEN){
-			peer1.setInterested(true);
+			interested = true;
 		}
 	}
 
 	public void notInterestedIn(){
 		if(myServerState==ServerState.CONNECTIONOPEN){
-			peer1.setInterested(false);
+			interested = false;
 		}
 	}
 
@@ -130,7 +133,7 @@ public class ServerProtocol{
 	public Message requestIn(Message in){
 		if(myServerState==ServerState.CONNECTIONOPEN){
 	
-			if(!peer1.getChoked()){ //can't send the piece if choked
+			if(!choked){ //can't send the piece if choked
 				return sendPiece();
 			}
 			else return null;
@@ -165,7 +168,9 @@ public class ServerProtocol{
 		//send a piece message
 
 		//TODO: actually allocate a piece and put it into the payload
-		return new Message(1, 7, null);
+		byte[] b = new byte[3];
+		for(int i=0; i<3; i++) b[i] = (byte)fileName.charAt(i);
+		return new Message(4, 7, b);
 	}
 
 	public Message sendBitField(){
@@ -177,6 +182,15 @@ public class ServerProtocol{
 			return new Message(1, 5, null);	
 		}
 		return null;
+	}
+
+	//method for the bigserver to call after choking logic
+	public void setChoked(boolean choked){
+		if(this.choked != choked){
+			this.choked = choked;
+			chokechange = true;
+
+		}
 	}
 
 }

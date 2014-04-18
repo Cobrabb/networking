@@ -67,8 +67,6 @@ public class ClientThread extends Thread{
        	 } catch (UnknownHostException e) {
         	    System.err.println("Don't know about host " + host);
        	 } catch (IOException e) {
-      	      System.err.println("Couldn't get I/O for the connection to " +
-      	          host);
      	   } 
   	  }	
 	}

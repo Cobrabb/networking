@@ -4,51 +4,55 @@ import java.nio.ByteBuffer;
 
 public class ServerThread extends Thread {
 
-	private int unchokingInterval;
-        private int  optimisticUnchokingInterval;
-        private int myPeerNum;
+        private int peerNum;
         private BitField myBitField;
-        private int numberOfPreferredNeighbors;
         private String fileName;
         private int fileSize;
         private int pieceSize;
-	private int portNumber;
+	private Socket clientSocket;
+	private int numberOfPreferredNeighbors;
+	private int unchokingInterval;
+	private int optimisticUnchokingInterval;
+	private Message init;
 
-	public ServerThread(int peernum, int numprefneighbor, int unchoking, int opunchoking, String filename, int filesize, int piecesize, int portnum){
-                myPeerNum = peernum;
-                numberOfPreferredNeighbors= numprefneighbor;
-                unchokingInterval = unchoking;
-                optimisticUnchokingInterval = opunchoking;
+	public ServerThread(Socket s, int neighbors, int unchoking, int opunchoking,  String filename, int filesize, int piecesize, BitField b, Message m){
                 fileName = filename;
                 fileSize = filesize;
                 pieceSize = piecesize;
-		portNumber = portnum;
+		clientSocket = s;
+		numberOfPreferredNeighbors = neighbors;
+		unchokingInterval = unchoking;
+		optimisticUnchokingInterval = opunchoking;
+		init = m;
+
+		//shared with all servers
+		myBitField = b;
+		
+		//get the peerNum of the calling client from the message.	
+		peerNum = m.getPeerID();
 	}
 
     public void run() {
         
-        
-	ServerProtocol pro = new ServerProtocol(myPeerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize);
+	ServerProtocol pro = new ServerProtocol(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, myBitField);
       
-	ServerSocket serverSocket = null; 
-	Socket clientSocket = null;
         OutputStream o = null;
 	InputStream i = null; 
         DataOutputStream out = null;
 	DataInputStream in = null;
 	ByteArrayOutputStream baos = null;
-
+	
         try 
          {
-            serverSocket = new ServerSocket(portNumber);
-            clientSocket = serverSocket.accept();     
 	    o = clientSocket.getOutputStream();
 	    i = clientSocket.getInputStream();
 	    out = new DataOutputStream(o);
             in = new DataInputStream(i); 
 	    baos = new ByteArrayOutputStream();
-	    Message pass;
 	    long openTime = System.currentTimeMillis();
+	    Message pass  = pro.processInput(init);
+	    byte[] x = pass.createMessage();
+	    out.write(x, 0, x.length);	
             while (true) {
 		if(in.available()>0){
 			byte buffer[] = new byte[in.available()];
@@ -70,8 +74,6 @@ public class ServerThread extends Thread {
 		}
             }
         } catch (IOException e) {
-            System.out.println("Exception caught when trying to listen on port "
-                + portNumber + " or listening for a connection");
             System.out.println(e.getMessage());
         }
     }
