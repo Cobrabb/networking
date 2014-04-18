@@ -1,15 +1,18 @@
 import java.nio.ByteBuffer;
 
+import ServerProtocol.ServerState;
+
 public class ClientProtocol{
 
 	private int myPeerNum;
 	private boolean interested;
 	private boolean choked;
 	private boolean requestOut;
-	private long nextInt;
 	private int fileSize;
 	private int pieceSize;
-	private int havecount; //TODO: remove this once actual interest logic is in place
+	private String fileName;
+	private BitField serverBitField;
+	private BitField myBitField;
 
 	//enum for the Client State
 	private enum ClientState{
@@ -20,17 +23,18 @@ public class ClientProtocol{
 	private ClientState myClientState;
 	
 	
-	public ClientProtocol(int peerNum, int filesize, int piecesize){
+	public ClientProtocol(int peerNum, int filesize, int piecesize, String fName, BitField mybField){
 		this.myPeerNum = peerNum;
 		myClientState = ClientState.NONE;
 		interested = false;
 		choked = true;
-		nextInt = 1000; //TODO: Unhardcode this
 		pieceSize = piecesize;
 		fileSize = filesize;
+		fileName = fName;
+		myBitField = mybField;
+		
 		
 		requestOut = false; 
-		havecount = 0; //TODO: remove this once actual interest logic is in place
 	}
 
 	public boolean isOpen(){
@@ -66,13 +70,22 @@ public class ClientProtocol{
 
 	//this happens every so often and does not block on server messages
 	public Message tick(long interval){
-		if(interval>=nextInt){
-			nextInt += 500;
-			return null;
-		}
 		if(!choked&&!requestOut&&interested){
 			return sendRequest();
 		}
+		else{
+			boolean oldint = interested; //this will still be necesary once real interested logic is in place
+			calculateInterest();
+
+
+			if(interested&&!oldint){
+				return sendInterested();
+			}
+			else if(!interested&&oldint){
+				return sendNotInterested();
+			}
+		}
+
 		return null;
 	}
 
@@ -87,7 +100,8 @@ public class ClientProtocol{
 
 	public Message bitFieldIn(Message in){
 		if(myClientState==ClientState.SENTBITFIELD){
-			//TODO: update bitfield of relevant peer	
+			serverBitField = new BitField(in.getPayload());
+			
 			calculateInterest();
 			
 			if(interested){
@@ -103,8 +117,13 @@ public class ClientProtocol{
 
 	public Message  haveIn(Message in){
 		//update bitfield of relevant peer
+		int index = 0;
+		byte[] b = in.getPayload();
+		for(int i = 0; i < b.length; i++){
+			index = (index << 8) + (b[i] & 0xff);
+		}
+		myBitField.toggleBitOn(index);
 		//calc interested or not interested
-		havecount++; //TODO: remove once real interested logic is in place
 		boolean oldint = interested; //this will still be necesary once real interested logic is in place
 		calculateInterest();
 
@@ -112,7 +131,7 @@ public class ClientProtocol{
 		if(interested&&!oldint){
 			return sendInterested();
 		}
-		else if(!interested){
+		else if(!interested&&oldint){
 			return sendNotInterested();
 		}
 
@@ -131,14 +150,20 @@ public class ClientProtocol{
 	}
 
 	public Message pieceIn(Message in){
-		havecount--; //TODO: remove once real interested logic is in place
-		//TODO: replace with actual piece handling
-		System.out.print("Got a message! Here it is: ");
-		for(int i=0; i<in.getPayload().length; i++){
-			System.out.print((char)in.getPayload()[i]);
+		int index = 0;
+		byte[] b = in.getPayload();
+		byte[] newPiece = new byte[b.length-4];
+		for(int i = 0; i < 4; i++){
+			index = (index << 8) + (b[i] & 0xff);
 		}
-		System.out.println();
-
+		
+		for(int i = 0; i < b.length; i++){
+			newPiece[i] = b[i+4];
+		}
+		
+		RandomAccess r = new RandomAccess(pieceSize, fileName);
+		r.writeRAF(newPiece, index);
+		
 		requestOut = false;
 
 		calculateInterest();
@@ -167,8 +192,9 @@ public class ClientProtocol{
 
 	public Message sendBitField(){
 		myClientState = ClientState.SENTBITFIELD;
-		//TODO: Actually construct a message which has a payload of a bitfield, rather than null
-		return new Message(1, 5, null);
+		byte[] b = myBitField.toByteArray();
+			
+		return new Message(b.length + 1, 5, b);	
 	}
 
 	public Message sendRequest(){
@@ -187,10 +213,9 @@ public class ClientProtocol{
 	//methods for calculation
 	public void calculateInterest(){
 		//TODO: fix this to have actual interested/not interested calculatons
-		if(havecount > 0){ 
+		if(!myBitField.equals(serverBitField)){
 			interested = true;
-		}
-		else{
+		}else{
 			interested = false;
 		}
 	}

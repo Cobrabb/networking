@@ -1,3 +1,4 @@
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
@@ -23,7 +24,7 @@ public class RandomAccess {
 		fileName = name;
 	}
 	
-	public void writeRAF(byte[] message, int index) throws IOException{
+	public void writeRAF(byte[] message, int index){
 		/* Method takes String that corresponds to file name, and using  a start and stop
 		   bit of byte array to copy particular bytes to file */
 		
@@ -32,15 +33,22 @@ public class RandomAccess {
 		int startSeek = index*pieceSize;
 		
 		//Create instance of RAF
-		RandomAccessFile raf = new RandomAccessFile(fileName,"rw");
+		RandomAccessFile raf;
+		try {
+			raf = new RandomAccessFile(fileName,"rw");
+			//Sets the file-pointer offset to start value
+			raf.seek(startSeek);
+			
+			//Write values of byte array to file with offset
+			raf.write(message, 0, message.length - 1);
+			
+			raf.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
-		//Sets the file-pointer offset to start value
-		raf.seek(startSeek);
 		
-		//Write values of byte array to file with offset
-		raf.write(message, 0, message.length - 1);
-		
-		raf.close();
 		
 		/*	
 		~~~~~ Method Testing ~~~~~~ 
@@ -65,5 +73,29 @@ public class RandomAccess {
 		
 		RAF.close();
 		*/
+	}
+	public byte[] readRAF(int index){
+		byte[] message = new byte[pieceSize];
+		RandomAccessFile raf;
+		try {
+			int startSeek = index*pieceSize;
+			raf = new RandomAccessFile(fileName,"rw");
+			
+			//Sets the file-pointer offset to start value
+			raf.seek(startSeek);
+			
+			//Write values of byte array to file with offset
+			raf.read(message, 0, message.length - 1);
+			
+			raf.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
+		
+		return null;
 	}
 }
