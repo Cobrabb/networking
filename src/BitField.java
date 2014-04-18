@@ -79,6 +79,16 @@ public class BitField{
 		return bit == 1;
 		
 	}
+
+
+	public boolean empty(){
+
+		for(int i=0; i<content.size(); i++){
+			if(content.at(i)!=0) return false;
+		}
+
+		return true;
+	}
 	
 
 		
