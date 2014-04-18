@@ -49,7 +49,7 @@ public class ServerProtocol{
 		Random rand = new Random();
 		if(myServerState == ServerState.SENTHANDSHAKE|| isOpen()){
 
-			if(rand.nextInt(20000)==75){ //TODO: replace with real logic to check to see if a piece has come in.
+			if(rand.nextInt(2000000)==75){ //TODO: replace with real logic to check to see if a piece has come in.
 				return sendHave();
 			}
 
