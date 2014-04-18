@@ -1,5 +1,7 @@
 import java.util.*;
 import java.nio.ByteBuffer;
+
+import ClientProtocol.ClientState;
 public class ServerProtocol{
 	
 
@@ -11,6 +13,7 @@ public class ServerProtocol{
 	private int fileSize;
 	private int pieceSize;
 	private BitField myBitField;
+	private BitField clientBitField;
 	private boolean choked; //whether or not the peer is choked
 	private boolean interested; //whether or not the peer is interested in me
 	private boolean chokechange;
@@ -110,10 +113,13 @@ public class ServerProtocol{
 	}
 
 	public Message  bitFieldIn(Message in){ 
-		//TODO: update bitfield for client, parse the payload of this message.
+		//update bitfield for client, parse the payload of this message.
+		clientBitField = new BitField(in.getPayload());
+			
 		if(myServerState==ServerState.SENTHANDSHAKE){ //bitfield can only happen after handshake but before connection open
 			return sendBitField();	
 		}
+
 		return null;
 	}
 
@@ -134,7 +140,7 @@ public class ServerProtocol{
 		if(myServerState==ServerState.CONNECTIONOPEN){
 	
 			if(!choked){ //can't send the piece if choked
-				return sendPiece();
+				return sendPiece(in);
 			}
 			else return null;
 		}
@@ -164,22 +170,35 @@ public class ServerProtocol{
 		return new Message(1, 1, null);
 	}
 
-	public Message sendPiece(){
+	public Message sendPiece(Message in){
 		//send a piece message
 
 		//TODO: actually allocate a piece and put it into the payload
-		byte[] b = new byte[3];
-		for(int i=0; i<3; i++) b[i] = (byte)fileName.charAt(i);
-		return new Message(4, 7, b);
+		RandomAccess r = new RandomAccess(pieceSize,fileName);
+		int pLoad = 0;
+		byte[] b = in.getPayload();
+		for (int i = 0; i < 4; i++)
+		{
+		   pLoad = (pLoad << 8) + (b[i] & 0xff);
+		}
+		byte[] message = r.readRAF(pLoad);
+		byte[] m = new byte[message.length + b.length];
+		for (int i = 0; i < 4; i++){
+			m[i] = b[i];
+		}
+		for (int i = 0; i < message.length; i++){
+			m[i+4] = message[i];
+		}
+		return new Message(m.length + 1, 7, m);
 	}
 
 	public Message sendBitField(){
 		//send a bitfield message
-
-		if(false){ //TODO: replace this with logic to see if the server actually has the files
+		if(!myBitField.empty()){ //TODO: replace this with logic to see if the server actually has the files
 			this.myServerState = ServerState.CONNECTIONOPEN;
-			//TODO: have the server actually send its bitfield
-			return new Message(1, 5, null);	
+			byte[] b = myBitField.toByteArray();
+			
+			return new Message(b.length + 1, 5, b);	
 		}
 		return null;
 	}

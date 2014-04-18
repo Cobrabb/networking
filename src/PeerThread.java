@@ -94,7 +94,7 @@ public class PeerThread extends Thread{
 
 		clients = new ArrayList<ClientThread>();
 		for(int i=0; i<peers.size(); i++){
-			ClientThread c = new ClientThread(peers.get(i).peerNum, fileSize, pieceSize, peers.get(i).portNum, peers.get(i).hostName);
+			ClientThread c = new ClientThread(peers.get(i).peerNum, fileSize, pieceSize, peers.get(i).portNum, peers.get(i).hostName,fileName, myBitField);
 			clients.add(c);
 		}
 	}
