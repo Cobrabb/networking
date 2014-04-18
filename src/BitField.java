@@ -10,6 +10,10 @@ public class BitField{
 		this(size, false);
 	}
 
+	public ArrayList<Byte> getContent(){
+		return this.content;
+	}
+
 	public BitField(int size, boolean has){
 		this.size = size;
 		this.content = new ArrayList<Byte>();
@@ -84,10 +88,32 @@ public class BitField{
 	public boolean empty(){
 
 		for(int i=0; i<content.size(); i++){
-			if(content.at(i)!=0) return false;
+			if(content.get(i)!=0) return false;
 		}
 
 		return true;
+	}
+
+	public boolean equals(BitField b){
+		if(b.getContent().size()!=content.size()) return false;
+
+		for(int i=0; i<content.size(); i++){
+			if(b.getContent().size()!=content.size()){
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	public byte[] toByteArray(){
+		byte[] b = new byte[content.size()];
+
+		for(int i=0; i<content.size(); i++){
+			b[i] = content.get(i).byteValue();
+		}
+
+		return b;
 	}
 	
 
