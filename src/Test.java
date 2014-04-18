@@ -69,8 +69,9 @@ public class Test{
 		
 		
 		//Create instance of RAF
-		RandomAccessFile RAF = new RandomAccessFile("RAF.dat","rw");
-		RandomAccess raf = new RandomAccess();
+		RandomAccess r = new RandomAccess(256,"RAF.dat");
+		r.writeRAF(b, 2);
+		r.writeRAF(b, 4);
 		
 		//Write values of byte array to file with offset
 
@@ -83,9 +84,11 @@ public class Test{
 		//RAF.seek(2);
 		RAF.write(b, 24, 1);
 		 */
+		/*
 		raf.RAF("RAF.dat", b, 20);
 		raf.RAF("RAF.dat", b, 56);
 		
 		RAF.close();
+		*/
 	}
 }

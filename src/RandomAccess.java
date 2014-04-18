@@ -15,49 +15,21 @@ public class RandomAccess {
 	 * @param args
 	 * @throws IOException 
 	 */
-	/*
-	public static void main(String[] args) throws IOException {
-		//Writing Random Access File
-		char[] name = {'A','B','C','D','E','F','G','H','I','J','K','L',
-				'M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'};
-		
-		RandomAccessFile raf = new RandomAccessFile("RAF.dat","rw");
-		
-		System.out.println("Beginning to write to RAF\n~~~");
-		
-		for(int i = 0; i < name.length; i++){
-			raf.write(name[i]);
-		}
-		
-		System.out.println("Finished writing to RAF\n~~~");
-		raf.close();
-		
-		//Reading Random Access File
-		System.out.println("Beginning to read to RAF\n~~~");
-		
-		RandomAccessFile RAF = new RandomAccessFile("RAF.dat","rw");
-		System.out.println("Done Reading RAF\n~~~");
-
-		RAF.seek(0);
-		System.out.print(RAF.read()+" ");	//Read value A == 65 in ASCII
-		RAF.seek(1);
-		System.out.print(RAF.read()+" ");	//Read value B == 66 in ASCII
-		RAF.seek(2);
-		System.out.print(RAF.read()+" ");	//Read value C == 67 in ASCII
-		RAF.seek(3);
-		System.out.print(RAF.read()+" ");	//Read value D == 68 in ASCII
-		
-		RAF.close();
-	}
-	*/
+	private int pieceSize;
+	private String fileName;
 	
-	public void RAF(String fileName, byte[] message, int startSeek) throws IOException{
+	public RandomAccess(int size, String name){
+		pieceSize = size;
+		fileName = name;
+	}
+	
+	public void writeRAF(byte[] message, int index) throws IOException{
 		/* Method takes String that corresponds to file name, and using  a start and stop
 		   bit of byte array to copy particular bytes to file */
 		
 		//constructor filename, piecesize
 		//startseek = index*piecesize
-		//
+		int startSeek = index*pieceSize;
 		
 		//Create instance of RAF
 		RandomAccessFile raf = new RandomAccessFile(fileName,"rw");
@@ -70,8 +42,10 @@ public class RandomAccess {
 		
 		raf.close();
 		
-		/*	Method Testing
-		 //Create instance of RAF
+		/*	
+		~~~~~ Method Testing ~~~~~~ 
+		
+		Create instance of RAF
 		RandomAccessFile RAF = new RandomAccessFile("RAF.dat","rw");
 		RandomAccess raf = new RandomAccess();
 		
