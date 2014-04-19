@@ -14,6 +14,11 @@ public class ServerThread extends Thread {
 	private int unchokingInterval;
 	private int optimisticUnchokingInterval;
 	private Message init;
+	private ServerProtocol pro;
+
+	public int getPeerNum(){
+		return this.peerNum;
+	}
 
 	public ServerThread(Socket s, int neighbors, int unchoking, int opunchoking,  String filename, int filesize, int piecesize, BitField b, Message m){
                 fileName = filename;
@@ -32,9 +37,22 @@ public class ServerThread extends Thread {
 		peerNum = m.getPeerID();
 	}
 
+	public boolean getChoked(){
+		if(pro!=null){
+			return pro.getChoked();
+		}
+		return false;
+	}
+
+	public void setChoked(boolean b){
+		if(pro!=null){
+			pro.setChoked(b);
+		}
+	}
+
     public void run() {
         
-	ServerProtocol pro = new ServerProtocol(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, myBitField);
+	pro = new ServerProtocol(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, myBitField);
       
         OutputStream o = null;
 	InputStream i = null; 

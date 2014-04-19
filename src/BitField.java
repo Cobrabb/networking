@@ -18,7 +18,6 @@ public class BitField{
 		this.size = size;
 		this.content = new ArrayList<Byte>();
 		byte b;
-
 		if(!has)	
 			b = 0;	
 		else 
@@ -26,6 +25,15 @@ public class BitField{
 
 		for(int i=0; i<size; i++){
 			content.add(new Byte(b));
+		}
+		
+	}
+
+	public BitField(BitField b){
+		this.size = b.size;
+		this.content = new ArrayList<Byte>();
+		for(int i=0; i<b.getContent().size(); i++){
+			this.content.add(b.getContent().get(i));
 		}
 		
 	}
@@ -98,7 +106,7 @@ public class BitField{
 		if(b.getContent().size()!=content.size()) return false;
 
 		for(int i=0; i<content.size(); i++){
-			if(b.getContent().size()!=content.size()){
+			if(b.getContent().get(i)!=content.get(i)){
 				return false;
 			}
 		}
@@ -115,7 +123,49 @@ public class BitField{
 
 		return b;
 	}
-	
+/*	
+	public ArrayList<int> compare(BitField b){
+		ArrayList<int> diff = new ArrayList<int>();
+		if(b.getContent().size()!=content.size()) return null;
+
+		for(int i=0; i<content.size(); i++){
+			if(b.getContent().get(i)!=content.get(i)){
+				byte b1 = b.getContent().get(i);
+				byte b2 = content.get(i);
+				for(int j=0; j<8; j++){
+					int i1 = b1 >> j & 1;
+					int i2 = b2 >> j & 1;
+					if(i1!=i2){
+						diff.add(j+i*8);
+					}
+				}
+			}
+		}
+
+		return diff;
+
+	}
+*/
+	public int getFirstDiff(BitField b){
+		if(b.getContent().size()!=content.size()) return -2;
+
+		for(int i=0; i<content.size(); i++){
+			if(b.getContent().get(i)!=content.get(i)){
+				byte b1 = b.getContent().get(i);
+				byte b2 = content.get(i);
+				for(int j=0; j<8; j++){
+					int i1 = b1 >> j & 1;
+					int i2 = b2 >> j & 1;
+					if(i1!=i2){
+						return j+i*8;
+					}
+				}
+			}
+		}
+
+		return -1;
+
+	}	
 
 		
 

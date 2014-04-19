@@ -16,8 +16,9 @@ public class BigServerThread extends Thread {
         private int pieceSize;
 	private int portNumber;
 	private ArrayList<ServerThread> servers;
+	private ArrayList<ClientRateInfo> rates;
 
-	public BigServerThread(int peernum, int numprefneighbor, int unchoking, int opunchoking, String filename, int filesize, int piecesize, int portnum, BitField b){
+	public BigServerThread(int peernum, int numprefneighbor, int unchoking, int opunchoking, String filename, int filesize, int piecesize, int portnum, BitField b, ArrayList<ClientRateInfo> r){
                 myPeerNum = peernum;
                 numberOfPreferredNeighbors= numprefneighbor;
                 unchokingInterval = unchoking;
@@ -27,6 +28,7 @@ public class BigServerThread extends Thread {
                 pieceSize = piecesize;
 		portNumber = portnum;
 		myBitField = b;
+		rates = r;
 
 		//initialize an arrayList to store the server threads
 		servers = new ArrayList<ServerThread>();
@@ -36,6 +38,9 @@ public class BigServerThread extends Thread {
         
 	ExecutorService executor = Executors.newCachedThreadPool();
 	BigServerProtocol pro = new BigServerProtocol(numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, myBitField);
+
+	ChokingThread c = new ChokingThread(servers, unchokingInterval, optimisticUnchokingInterval, numberOfPreferredNeighbors, rates);
+	executor.execute(c);
         
       while(true){ 
 	ServerSocket serverSocket = null; 
@@ -51,8 +56,6 @@ public class BigServerThread extends Thread {
             clientSocket = serverSocket.accept();
 	    i = clientSocket.getInputStream();
             in = new DataInputStream(i); 
-	    long openTime = System.currentTimeMillis();
-            while (true) {
 		if(in.available()>0){
 			byte buffer[] = new byte[in.available()];
 			in.readFully(buffer);
@@ -67,10 +70,6 @@ public class BigServerThread extends Thread {
 				System.out.println("Error.");
 			}
 		}
-		//all logic which does not block for input
-		long interval = System.currentTimeMillis()-openTime;
-		pro.tick(interval, servers);	
-            }
 	    serverSocket.close();
         } catch (IOException e) {
             System.out.println("Exception caught when trying to listen on port "

@@ -1,10 +1,9 @@
 import java.nio.ByteBuffer;
 
-import ServerProtocol.ServerState;
 
 public class ClientProtocol{
 
-	private int myPeerNum;
+	private int myPeerNum; //refers to the servers peernum, not the peer which is launching this client
 	private boolean interested;
 	private boolean choked;
 	private boolean requestOut;
@@ -13,6 +12,7 @@ public class ClientProtocol{
 	private String fileName;
 	private BitField serverBitField;
 	private BitField myBitField;
+	private ClientRateInfo myRate;
 
 	//enum for the Client State
 	private enum ClientState{
@@ -23,7 +23,7 @@ public class ClientProtocol{
 	private ClientState myClientState;
 	
 	
-	public ClientProtocol(int peerNum, int filesize, int piecesize, String fName, BitField mybField){
+	public ClientProtocol(int peerNum, int filesize, int piecesize, String fName, BitField mybField, ClientRateInfo c){
 		this.myPeerNum = peerNum;
 		myClientState = ClientState.NONE;
 		interested = false;
@@ -32,7 +32,7 @@ public class ClientProtocol{
 		fileSize = filesize;
 		fileName = fName;
 		myBitField = mybField;
-		
+		myRate = c;
 		
 		requestOut = false; 
 	}
@@ -150,6 +150,10 @@ public class ClientProtocol{
 	}
 
 	public Message pieceIn(Message in){
+		//calculate the rate
+		myRate.numPieces++;
+				
+		
 		int index = 0;
 		byte[] b = in.getPayload();
 		byte[] newPiece = new byte[b.length-4];
@@ -212,7 +216,6 @@ public class ClientProtocol{
 
 	//methods for calculation
 	public void calculateInterest(){
-		//TODO: fix this to have actual interested/not interested calculatons
 		if(!myBitField.equals(serverBitField)){
 			interested = true;
 		}else{

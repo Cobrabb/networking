@@ -23,6 +23,7 @@ public class PeerThread extends Thread{
 	private boolean hasFile;
 	private int portNum;
 	private BitField myBitField;
+	private ArrayList<ClientRateInfo> rates;
 
 	//Client and Server
 	private BigServerThread server;
@@ -80,6 +81,8 @@ public class PeerThread extends Thread{
 		}
 
 		
+		rates = new ArrayList<ClientRateInfo>();
+	
 		//set the properties
 		numberOfPreferredNeighbors = Integer.parseInt(params[0]);	
 		unchokingInterval = Integer.parseInt(params[1]);	
@@ -90,12 +93,16 @@ public class PeerThread extends Thread{
 
 		myBitField = new BitField((int)Math.ceil((float)fileSize/(float)pieceSize), hasFile);
 
-		server = new BigServerThread(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, portNum, myBitField);	
+		server = new BigServerThread(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, portNum, myBitField, rates);	
 
 		clients = new ArrayList<ClientThread>();
 		for(int i=0; i<peers.size(); i++){
-			ClientThread c = new ClientThread(peers.get(i).peerNum, fileSize, pieceSize, peers.get(i).portNum, peers.get(i).hostName,fileName, myBitField);
+			ClientRateInfo info = new ClientRateInfo();
+			info.rate = 0;
+			info.peerNum = peers.get(i).peerNum;
+			ClientThread c = new ClientThread(peers.get(i).peerNum, fileSize, pieceSize, peers.get(i).portNum, peers.get(i).hostName,fileName, myBitField, info);
 			clients.add(c);
+			rates.add(info);
 		}
 	}
 

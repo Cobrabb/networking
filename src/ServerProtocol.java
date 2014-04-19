@@ -1,7 +1,6 @@
 import java.util.*;
 import java.nio.ByteBuffer;
 
-import ClientProtocol.ClientState;
 public class ServerProtocol{
 	
 
@@ -13,7 +12,7 @@ public class ServerProtocol{
 	private int fileSize;
 	private int pieceSize;
 	private BitField myBitField;
-	private BitField clientBitField;
+	private BitField clientBitField; //a local copy of the bitfield
 	private boolean choked; //whether or not the peer is choked
 	private boolean interested; //whether or not the peer is interested in me
 	private boolean chokechange;
@@ -34,6 +33,7 @@ public class ServerProtocol{
 		fileSize = filesize;
 		pieceSize = piecesize;
 		myBitField = b;
+		clientBitField = new BitField(b);
 	
 		this.myServerState = ServerState.NONE;
 
@@ -49,35 +49,21 @@ public class ServerProtocol{
 
 	//things that happen often but do not block on the client happen here.
 	public Message tick(long interval){ 
-		Random rand = new Random();
+
 		if(myServerState == ServerState.SENTHANDSHAKE|| isOpen()){
-
-			if(rand.nextInt(2000000)==75){ //TODO: replace with real logic to check to see if a piece has come in.
-				return sendHave();
+			int firstDiff = myBitField.getFirstDiff(clientBitField);
+			if(firstDiff>=0){
+				clientBitField.toggleBitOn(firstDiff);
+				return sendHave(firstDiff);
 			}
-
 		}
 
-		if(interval>=unchokingInterval){
-
-			unchokingInterval += 4000; //TODO: Unhardcode this value
-
-			if(isOpen()){ // should not send choke/unchoke if the connection is not open yet.
-		
-				//currently, the server just toggles every interval 
-				//TODO: replace with real logic for checking for choked/unchoked
-				if(choked&&interested){
-					choked = false;
-					return sendUnchoke();
-				}
-				else if(!choked){
-					choked = true;
-					return sendChoke();
-				}
-			}
-	
-			
-		}
+		if(chokechange&&choked){
+			return sendChoke();
+		}	
+		if(chokechange&&!choked){
+			return sendUnchoke();
+		}	
 		return null;
 	}
 
@@ -154,10 +140,12 @@ public class ServerProtocol{
 		return new Message(0, 8, null);
 	}
 
-	public Message sendHave(){
+	public Message sendHave(int index){
 		//send a have message
 		this.myServerState = ServerState.CONNECTIONOPEN;
-		return new Message(1, 4, null);
+		byte[] b = ByteBuffer.allocate(4).putInt(index).array();	
+		
+		return new Message(5, 4, b);
 	}
 
 	public Message sendChoke(){
@@ -173,7 +161,6 @@ public class ServerProtocol{
 	public Message sendPiece(Message in){
 		//send a piece message
 
-		//TODO: actually allocate a piece and put it into the payload
 		RandomAccess r = new RandomAccess(pieceSize,fileName);
 		int pLoad = 0;
 		byte[] b = in.getPayload();
@@ -194,7 +181,7 @@ public class ServerProtocol{
 
 	public Message sendBitField(){
 		//send a bitfield message
-		if(!myBitField.empty()){ //TODO: replace this with logic to see if the server actually has the files
+		if(!myBitField.empty()){
 			this.myServerState = ServerState.CONNECTIONOPEN;
 			byte[] b = myBitField.toByteArray();
 			
@@ -211,5 +198,9 @@ public class ServerProtocol{
 
 		}
 	}
+
+	public boolean getChoked(){
+		return this.choked;
+	}	
 
 }

@@ -10,8 +10,9 @@ public class ClientThread extends Thread{
 	private int peerNum;
 	private String fileName;
 	private BitField bitField;
+	private ClientRateInfo myRate;
 	
-	public ClientThread(int peernum, int filesize, int piecesize, int portnum, String thehost, String fName, BitField bitField){
+	public ClientThread(int peernum, int filesize, int piecesize, int portnum, String thehost, String fName, BitField bitField, ClientRateInfo c){
 		peerNum = peernum;
 		fileSize = filesize;
 		pieceSize = piecesize;
@@ -19,10 +20,11 @@ public class ClientThread extends Thread{
 		host = thehost;
 		fileName = fName;
 		this.bitField = bitField;
+		myRate = c;
 	}
 
     public  void run() {
-	ClientProtocol pro = new ClientProtocol(peerNum, fileSize, pieceSize, fileName, bitField);
+	ClientProtocol pro = new ClientProtocol(peerNum, fileSize, pieceSize, fileName, bitField, myRate);
 	Message handshake = pro.initiateContact();
 	byte[] c = handshake.createMessage();
 
