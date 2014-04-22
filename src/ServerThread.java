@@ -85,10 +85,12 @@ public class ServerThread extends Thread {
 		}
 		//all logic which does not block for input
 		long interval = System.currentTimeMillis()-openTime;
-		pass = pro.tick(interval);	
+		pass = pro.tick(interval);
 		if(pass != null){	
+			System.out.println("ServerThread: About to send a ticking message "+pass.getType());
 			byte[] b = pass.createMessage();
 			out.write(b, 0, b.length);
+			System.out.println("ServerThread: Sent a ticking message");
 		}
             }
         } catch (IOException e) {

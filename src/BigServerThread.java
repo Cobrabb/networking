@@ -41,6 +41,7 @@ public class BigServerThread extends Thread {
 
 	ChokingThread c = new ChokingThread(servers, unchokingInterval, optimisticUnchokingInterval, numberOfPreferredNeighbors, rates);
 	executor.execute(c);
+	System.out.println("BigServerThread: Launched the ChokingThread");
         
       while(true){ 
 	ServerSocket serverSocket = null; 
@@ -53,15 +54,21 @@ public class BigServerThread extends Thread {
         try 
          {
             serverSocket = new ServerSocket(portNumber);
+		System.out.println("BigServerThread: about to stall on accept");
             clientSocket = serverSocket.accept();
+		System.out.println("BigServerThread: accepted");
 	    i = clientSocket.getInputStream();
             in = new DataInputStream(i); 
+	    while(true){
 		if(in.available()>0){
+			System.out.println("BigServerThread; got something....");
 			byte buffer[] = new byte[in.available()];
 			in.readFully(buffer);
 			Message m = new Message(buffer);
+			System.out.println("BigServerThread: recieved a message from "+m.getPeerID());
 			if(m.getPeerID()!=0){
 				ServerThread s = new ServerThread(clientSocket, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, myBitField, m);
+			System.out.println("BigServerThread: passing the client off to its server");
 				servers.add(s);
 				executor.execute(s);
 				break;
@@ -70,6 +77,7 @@ public class BigServerThread extends Thread {
 				System.out.println("Error.");
 			}
 		}
+	}		
 	    serverSocket.close();
         } catch (IOException e) {
             System.out.println("Exception caught when trying to listen on port "

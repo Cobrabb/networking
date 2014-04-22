@@ -22,10 +22,12 @@ public class ChokingThread extends Thread{
 	}
 
 	public void run(){
+		//System.out.println("ChokingThread: Launching");
 		while(true){
 			long currentTime = System.currentTimeMillis();
 			
 			if(currentTime-openTime >= lastUnchoked){
+				//System.out.println("ChokingThread: Time to calculate unchoking");
 				preferredNeighbors.refresh();
 
 				for(int i=0; i<rates.size(); i++){
@@ -49,10 +51,11 @@ public class ChokingThread extends Thread{
 				}
 
 					
-				lastUnchoked = currentTime + unchokingInterval;
+				lastUnchoked = currentTime-openTime + unchokingInterval;
 				
 			}
 			if(currentTime-openTime >= lastOptimisticUnchoked){
+				//System.out.println("ChokingThread: Time to calculate unchoking optimistically");
 				ArrayList<ClientRateInfo> c;
 				if(preferredNeighbors.chokedEmpty()){
 					c = rates;
@@ -69,7 +72,8 @@ public class ChokingThread extends Thread{
 					}
 				}
 
-				lastOptimisticUnchoked = currentTime + optimisticUnchokingInterval;
+				lastOptimisticUnchoked = currentTime-openTime + optimisticUnchokingInterval;
+
 			}
 
 		}

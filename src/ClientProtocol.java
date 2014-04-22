@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 public class ClientProtocol{
 
 	private int myPeerNum; //refers to the servers peernum, not the peer which is launching this client
+	private int thisPeerNum; //refers to the peer which is launching this client
 	private boolean interested;
 	private boolean choked;
 	private boolean requestOut;
@@ -18,12 +19,13 @@ public class ClientProtocol{
 	private enum ClientState{
 		NONE, //this peer is not currently doing anything
 		SENTHANDSHAKE, //this peer has sent the handshake message and is waiting for a reply
-		SENTBITFIELD  //this peer has received the handshake reply
+		SENTBITFIELD,  //this peer has received the handshake reply
+		CONNECTIONOPEN
 	}
 	private ClientState myClientState;
 	
 	
-	public ClientProtocol(int peerNum, int filesize, int piecesize, String fName, BitField mybField, ClientRateInfo c){
+	public ClientProtocol(int tpeernum, int peerNum, int filesize, int piecesize, String fName, BitField mybField, ClientRateInfo c){
 		this.myPeerNum = peerNum;
 		myClientState = ClientState.NONE;
 		interested = false;
@@ -33,17 +35,18 @@ public class ClientProtocol{
 		fileName = fName;
 		myBitField = mybField;
 		myRate = c;
+		thisPeerNum = tpeernum;
 		
 		requestOut = false; 
 	}
 
 	public boolean isOpen(){
-		return myClientState==ClientState.SENTBITFIELD;
+		return myClientState==ClientState.CONNECTIONOPEN;
 	}
 
 	// method for message handling
 	public Message processInput(Message in){
-		System.out.println("Got: "+in.getType());
+		//System.out.println("ClientProtocol: Got: "+in.getType());
 		if(in.getType()==8){
 			return handShakeIn();
 		}
@@ -70,20 +73,20 @@ public class ClientProtocol{
 
 	//this happens every so often and does not block on server messages
 	public Message tick(long interval){
+		if(myClientState!=ClientState.CONNECTIONOPEN) return null;
 		if(!choked&&!requestOut&&interested){
 			return sendRequest();
 		}
-		else{
-			boolean oldint = interested; //this will still be necesary once real interested logic is in place
-			calculateInterest();
+
+		boolean oldint = interested; //this will still be necesary once real interested logic is in place
+		calculateInterest();
 
 
-			if(interested&&!oldint){
-				return sendInterested();
-			}
-			else if(!interested&&oldint){
-				return sendNotInterested();
-			}
+		if(interested&&!oldint){
+			return sendInterested();
+		}
+		else if(!interested&&oldint){
+			return sendNotInterested();
 		}
 
 		return null;
@@ -100,6 +103,7 @@ public class ClientProtocol{
 
 	public Message bitFieldIn(Message in){
 		if(myClientState==ClientState.SENTBITFIELD){
+			if(myClientState!=ClientState.CONNECTIONOPEN) myClientState = ClientState.CONNECTIONOPEN;
 			serverBitField = new BitField(in.getPayload());
 			
 			calculateInterest();
@@ -117,17 +121,22 @@ public class ClientProtocol{
 
 	public Message  haveIn(Message in){
 		//update bitfield of relevant peer
+		if(serverBitField == null){
+			serverBitField = new BitField(myBitField, false);
+		}
 		int index = 0;
 		byte[] b = in.getPayload();
 		for(int i = 0; i < b.length; i++){
 			index = (index << 8) + (b[i] & 0xff);
 		}
-		myBitField.toggleBitOn(index);
+		System.out.println("ClientProtocol: The server claims that it has piece "+index);
+		serverBitField.toggleBitOn(index);
 		//calc interested or not interested
 		boolean oldint = interested; //this will still be necesary once real interested logic is in place
 		calculateInterest();
 
-
+		
+		if(myClientState!=ClientState.CONNECTIONOPEN) myClientState = ClientState.CONNECTIONOPEN;
 		if(interested&&!oldint){
 			return sendInterested();
 		}
@@ -161,7 +170,9 @@ public class ClientProtocol{
 			index = (index << 8) + (b[i] & 0xff);
 		}
 		
-		for(int i = 0; i < b.length; i++){
+		myBitField.toggleBitOn(index);
+		
+		for(int i = 0; i < newPiece.length; i++){
 			newPiece[i] = b[i+4];
 		}
 		
@@ -186,7 +197,7 @@ public class ClientProtocol{
 		myClientState = ClientState.SENTHANDSHAKE;
 		
 		byte[] b = new byte[27];
-		byte[] pnum = ByteBuffer.allocate(4).putInt(myPeerNum).array();
+		byte[] pnum = ByteBuffer.allocate(4).putInt(thisPeerNum).array();
 		for(int i=0; i<4; i++){
 			b[23+i] = pnum[i];
 		}
@@ -202,8 +213,11 @@ public class ClientProtocol{
 	}
 
 	public Message sendRequest(){
-		requestOut = true;	
-		return new Message(1, 6, null);
+		requestOut = true;
+		int i = myBitField.getFirstHas(serverBitField);
+		System.out.println("ClientProtocol: About to send a request... here is what I am requesting: "+i);
+		byte[] pnum = ByteBuffer.allocate(4).putInt(i).array();
+		return new Message(5, 6, pnum);
 	}
 
 	public Message sendInterested(){
@@ -216,7 +230,8 @@ public class ClientProtocol{
 
 	//methods for calculation
 	public void calculateInterest(){
-		if(!myBitField.equals(serverBitField)){
+		int get = myBitField.getFirstHas(serverBitField);
+		if(get>=0){
 			interested = true;
 		}else{
 			interested = false;

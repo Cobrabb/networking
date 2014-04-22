@@ -96,6 +96,6 @@ public class RandomAccess {
 		
 		
 		
-		return null;
+		return message;
 	}
 }

@@ -6,24 +6,31 @@ public class BitField{
 	int size;
 	ArrayList<Byte> content;
 
-	public BitField(int size){
-		this(size, false);
+	public BitField(int filesize, int piecesize){
+		this(filesize, piecesize, false);
 	}
 
 	public ArrayList<Byte> getContent(){
 		return this.content;
 	}
 
-	public BitField(int size, boolean has){
-		this.size = size;
+	public BitField(int filesize, int piecesize, boolean has){
+		int bigSize = ((int)Math.ceil((float)filesize/(float)piecesize));
+		this.size = (int)(Math.ceil(bigSize/8.0));
+		System.out.println("Intialized the Bitfield with Size: "+size);
 		this.content = new ArrayList<Byte>();
-		byte b;
-		if(!has)	
-			b = 0;	
-		else 
-			b = -128;
+		
+		byte on = 0;
+		if(has) on = 1;
 
 		for(int i=0; i<size; i++){
+			byte b = 0;
+			for(int j=0; j<8; j++){
+				b |= on << j;
+				if(i==size-1 && j==bigSize-1){
+					break;
+				}
+			}
 			content.add(new Byte(b));
 		}
 		
@@ -34,6 +41,16 @@ public class BitField{
 		this.content = new ArrayList<Byte>();
 		for(int i=0; i<b.getContent().size(); i++){
 			this.content.add(b.getContent().get(i));
+		}
+		
+	}
+
+	public BitField(BitField b, boolean f){
+		this.size = b.size;
+		this.content = new ArrayList<Byte>();
+		byte x = 0;
+		for(int i=0; i<b.getContent().size(); i++){
+			this.content.add(new Byte(x));
 		}
 		
 	}
@@ -74,6 +91,8 @@ public class BitField{
 		//toggles it on, if it is off. The rest of the method needs to be written still
 		byte b = content.get(contentPos);
 		b |= 1 << bitpos;
+
+		content.set(contentPos, new Byte(b));
 			
 		return true;
 	}
@@ -166,6 +185,26 @@ public class BitField{
 		return -1;
 
 	}	
+
+	public int getFirstHas(BitField b){
+		if(b.getContent().size()!=content.size()) return -2;
+
+		for(int i=0; i<content.size(); i++){
+			if(b.getContent().get(i)!=content.get(i)){
+				byte b1 = b.getContent().get(i);
+				byte b2 = content.get(i);
+				for(int j=7; j>-1; j--){
+					int i1 = b1 >> j & 1;
+					int i2 = b2 >> j & 1;
+					if(i1==1&&i2==0){
+						return j+i*8;
+					}
+				}
+			}
+		}
+
+		return -1;
+	}
 
 		
 
