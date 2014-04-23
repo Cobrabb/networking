@@ -31,8 +31,16 @@ public class ChokingThread extends Thread{
 				preferredNeighbors.refresh();
 
 				for(int i=0; i<rates.size(); i++){
-					rates.get(i).calcRate(unchokingInterval);	
-					preferredNeighbors.insert(rates.get(i));
+					ServerThread connect = null;
+					for(int j=0; j<servers.size(); j++){
+						if(servers.get(j).getPeerNum() == rates.get(i).peerNum){
+							connect = servers.get(j);
+						}
+					}
+					if(connect!=null&&connect.getInterested()){
+						rates.get(i).calcRate(unchokingInterval);	
+						preferredNeighbors.insert(rates.get(i));
+					}
 				}
 				ClientRateInfo[] c; 
 				c = preferredNeighbors.getInfo();
@@ -40,9 +48,11 @@ public class ChokingThread extends Thread{
 				for(int i=0; i<servers.size(); i++){
 					choked = true;
 					for(int j=0; j<c.length; j++){
-						if(c[j].peerNum == servers.get(i).getPeerNum()){
-							servers.get(i).setChoked(false);
-							choked = false;
+						if(c[j]!=null){
+							if(c[j].peerNum == servers.get(i).getPeerNum()){
+								servers.get(i).setChoked(false);
+								choked = false;
+							}
 						}
 					}	
 					if(choked){

@@ -1,6 +1,7 @@
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.concurrent.*;
 
 /**
  * 
@@ -18,13 +19,29 @@ public class RandomAccess {
 	 */
 	private int pieceSize;
 	private String fileName;
+	private static Semaphore block;
+	private static RandomAccessFile raf;
 	
 	public RandomAccess(int size, String name){
 		pieceSize = size;
 		fileName = name;
+		block = new Semaphore(1);
+		try{
+			raf = new RandomAccessFile(fileName, "rw");
+		}catch(Exception e){
+			System.out.println("...");
+		}
 	}
 	
-	public void writeRAF(byte[] message, int index){
+	public synchronized void writeRAF(byte[] message, int index){
+		try{
+			block.acquire();
+		}
+		catch(Exception e){
+			System.out.println("A semaphore problem");
+		}
+		System.out.println("Writing 1");
+		
 		/* Method takes String that corresponds to file name, and using  a start and stop
 		   bit of byte array to copy particular bytes to file */
 		
@@ -33,23 +50,31 @@ public class RandomAccess {
 		int startSeek = index*pieceSize;
 		
 		//Create instance of RAF
-		RandomAccessFile raf;
 		try {
-			raf = new RandomAccessFile(fileName,"rw");
 			//Sets the file-pointer offset to start value
 			raf.seek(startSeek);
+
+			String pieceString = "";
+			for (int i = 0; i < message.length; i++)
+			{
+				if(message[i]!=10&&message[i]!=13){
+					pieceString += (char)message[i];
+				}
+			}
+			System.out.println("RAF: about to write \""+pieceString+"\" to "+index);
 			
 			//Write values of byte array to file with offset
-			raf.write(message, 0, message.length - 1);
+			raf.write(message);
+			raf.seek(0);
 			
-			raf.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 		
-		
+		System.out.println("Writing 2");
+		block.release();	
 		/*	
 		~~~~~ Method Testing ~~~~~~ 
 		
@@ -74,27 +99,43 @@ public class RandomAccess {
 		RAF.close();
 		*/
 	}
-	public byte[] readRAF(int index){
+	public synchronized byte[] readRAF(int index){
+		try{
+			block.acquire();
+		}
+		catch(Exception e){
+			System.out.println("A semaphore problem");
+		}
+		System.out.println("Reading 1");
+
 		byte[] message = new byte[pieceSize];
-		RandomAccessFile raf;
 		try {
 			int startSeek = index*pieceSize;
-			raf = new RandomAccessFile(fileName,"rw");
 			
 			//Sets the file-pointer offset to start value
 			raf.seek(startSeek);
 			
 			//Write values of byte array to file with offset
-			raf.read(message, 0, message.length - 1);
-			
-			raf.close();
+			raf.read(message);
+
+			String pieceString = "";
+			for (int i = 0; i < message.length; i++)
+			{
+				if(message[i]!=10&&message[i]!=13){
+					pieceString += (char)message[i];
+				}
+			}
+			System.out.println("RAF: just read \""+pieceString+"\" from "+index);
+
+			raf.seek(0);	
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		
-		
+	
+		System.out.println("Reading 2");
+		block.release();	
 		
 		return message;
 	}

@@ -25,6 +25,7 @@ public class PreferredNeighborList{
 		if(currentLast < rates.length){
 			rates[currentLast] = c;
 			currentLast++;
+			sort();
 			return;
 		}
 		
@@ -40,8 +41,8 @@ public class PreferredNeighborList{
 
 	public void sort(){
 		
-		for(int i=0; i<rates.length; i++){
-			for(int j=0; j<rates.length-1; j++){
+		for(int i=0; i<currentLast; i++){
+			for(int j=0; j<currentLast-1; j++){
 				if(rates[j].rate < rates[j+1].rate){
 					ClientRateInfo temp = rates[j];
 					rates[j] = rates[j+1];

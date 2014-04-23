@@ -69,9 +69,9 @@ public class Test{
 		
 		
 		//Create instance of RAF
-		RandomAccess r = new RandomAccess(256,"RAF.dat");
-		r.writeRAF(b, 2);
-		r.writeRAF(b, 4);
+		//RandomAccess r = new RandomAccess(256,"RAF.dat");
+		//r.writeRAF(b, 2);
+		//r.writeRAF(b, 4);
 		
 		//Write values of byte array to file with offset
 

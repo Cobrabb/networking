@@ -112,9 +112,13 @@ public class Message {
 			
 		}
 		else{
-			b = new byte[length+4];
-			if(b!=null&&payload!=null)
-			System.out.println("Message: Length = "+b.length+" Payload length = "+payload.length+" The message type was "+type);
+			if(payload!=null){	
+				b = new byte[payload.length+5];
+			}
+			else{
+				b = new byte[5];
+			}
+			//System.out.println("Message: Length = "+b.length+" Payload length = "+payload.length+" The message type was "+type);
 	
 			b[0] = (byte) (length >> 24);
 			b[1] = (byte) (length >> 16);
@@ -123,8 +127,8 @@ public class Message {
 			b[4] = (byte)type;
 	
 			if(payload!=null){
-				for(int i = 5; i < b.length; i++){
-					b[i] = payload[i-5];
+				for(int i = 0; i < payload.length; i++){
+					b[i+5] = payload[i];
 				}
 			}
 		}

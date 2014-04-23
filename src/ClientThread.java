@@ -12,9 +12,10 @@ public class ClientThread extends Thread{
 	private BitField bitField;
 	private ClientRateInfo myRate;
 	private int thisPeerNum;
+	private RandomAccess file;
 	
-	public ClientThread(int tpeernum, int peernum, int filesize, int piecesize, int portnum, String thehost, String fName, BitField bitField, ClientRateInfo c){
-		System.out.println("ClientThread: Init");
+	public ClientThread(int tpeernum, int peernum, int filesize, int piecesize, int portnum, String thehost, String fName, BitField bitField, ClientRateInfo c, RandomAccess f){
+		//System.out.println("ClientThread: Init");
 		thisPeerNum = tpeernum;
 		peerNum = peernum;
 		fileSize = filesize;
@@ -24,28 +25,29 @@ public class ClientThread extends Thread{
 		fileName = fName;
 		this.bitField = bitField;
 		myRate = c;
+		file = f;
 	}
 
     public  void run() {
 	
-	System.out.println("ClientThread: Creating a handshake message");
-	ClientProtocol pro = new ClientProtocol(thisPeerNum, peerNum, fileSize, pieceSize, fileName, bitField, myRate);
+	//System.out.println("ClientThread: Creating a handshake message");
+	ClientProtocol pro = new ClientProtocol(thisPeerNum, peerNum, fileSize, pieceSize, fileName, bitField, myRate, file);
 	Message handshake = pro.initiateContact();
 	byte[] c = handshake.createMessage();
 
-	System.out.println("ClientThread: Created a handshake message");
+	//System.out.println("ClientThread: Created a handshake message");
 	Socket clientSocket = null;
 	OutputStream o = null;
 	InputStream i = null;
 	DataOutputStream out = null;
 	DataInputStream in = null;
 	ByteArrayOutputStream baos = null;
-	System.out.println("ClientThread: about to look for a server");
+	//System.out.println("ClientThread: about to look for a server");
 	while(true){
       	  try 
        	  {
 		    clientSocket = new Socket(host, portNum);
-		System.out.println("ClientThread: succeed");
+		//System.out.println("ClientThread: succeed");
 		
 		    o = clientSocket.getOutputStream();
 		    i = clientSocket.getInputStream();
@@ -57,7 +59,7 @@ public class ClientThread extends Thread{
 	
 		    //send original handshake
 		
-		System.out.println("ClientThread: sent handshake");
+		//System.out.println("ClientThread: sent handshake");
 		    out.write(c, 0, c.length);
 
         	    while (true) {
@@ -65,12 +67,12 @@ public class ClientThread extends Thread{
  				byte buffer[] = new byte[in.available()];
 				in.readFully(buffer);
 				Message m = new Message(buffer);
-				System.out.println("ClientThread: Got a message of type: "+m.getType());
+				//System.out.println("ClientThread: Got a message of type: "+m.getType());
 				pass = pro.processInput(m);	
 				if(pass == null){
 					continue;
 				}	
-				System.out.println("ClientThread: About to send a message of type: "+pass.getType());
+				//System.out.println("ClientThread: About to send a message of type: "+pass.getType());
 				byte[] b = pass.createMessage();
 				out.write(b, 0, b.length);
 			}

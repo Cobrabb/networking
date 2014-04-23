@@ -17,6 +17,7 @@ public class ServerProtocol{
 	private boolean choked; //whether or not the peer is choked
 	private boolean interested; //whether or not the peer is interested in me
 	private boolean chokechange;
+	private RandomAccess file;
 
 	private enum ServerState  {
 		NONE,
@@ -25,7 +26,7 @@ public class ServerProtocol{
 	};
 	private ServerState myServerState;
 
-	public ServerProtocol(int peernum, int numprefneighbor, int unchoking, int opunchoking, String filename, int filesize, int piecesize, BitField b){
+	public ServerProtocol(int peernum, int numprefneighbor, int unchoking, int opunchoking, String filename, int filesize, int piecesize, BitField b, RandomAccess f){
 		peerNum = peernum;
 		numberOfPreferredNeighbors= numprefneighbor;
 		unchokingInterval = unchoking*1000;
@@ -35,6 +36,7 @@ public class ServerProtocol{
 		pieceSize = piecesize;
 		myBitField = b;
 		localBitField = new BitField(b);
+		file = f;
 
 	
 		this.myServerState = ServerState.NONE;
@@ -43,6 +45,10 @@ public class ServerProtocol{
 		interested = false;
 		chokechange = false;
 
+	}
+
+	public boolean getInterested(){
+		return this.interested;
 	}
 
 	public boolean isOpen(){
@@ -73,7 +79,7 @@ public class ServerProtocol{
 
 	//message handling happens here
 	public Message processInput(Message in){
-		System.out.println("ServerProtocol: Got: "+in.getType());
+		System.out.println("ServerProtocol["+peerNum+"]: Got: "+in.getType());
 		if(in.getType()==8){
 			return handShakeIn();
 		}	
@@ -105,7 +111,7 @@ public class ServerProtocol{
 
 	public Message  bitFieldIn(Message in){ 
 		//update bitfield for client, parse the payload of this message.
-		System.out.println("ServerProtocol: Got Bitfield");
+		//System.out.println("ServerProtocol["+peerNum+"]: Got Bitfield");
 		clientBitField = new BitField(in.getPayload());
 			
 		if(myServerState==ServerState.SENTHANDSHAKE){ //bitfield can only happen after handshake but before connection open
@@ -161,26 +167,24 @@ public class ServerProtocol{
 
 	public Message sendUnchoke(){
 		//send a unchoke message
-		System.out.println("About to send an unchoke message.");
 		return new Message(1, 1, null);
 	}
 
 	public Message sendPiece(Message in){
 		//send a piece message
-		RandomAccess r = new RandomAccess(pieceSize,fileName);
 		int pLoad = 0;
 		byte[] b = in.getPayload();
 		if(b==null){
-			System.out.println("ServerProtocol: b was null.");
+			//System.out.println("ServerProtocol["+peerNum+"]: b was null.");
 		}
 		for (int i = 0; i < 4; i++)
 		{
 		   pLoad = (pLoad << 8) + (b[i] & 0xff);
 		}
-		System.out.println("ServerProtocol: About to send a piece... piecenum Requested was "+pLoad);
-		byte[] message = r.readRAF(pLoad);
+		//System.out.println("ServerProtocol["+peerNum+"]: About to send a piece... piecenum Requested was "+pLoad);
+		byte[] message = file.readRAF(pLoad);
 		if(message==null){
-			System.out.println("ServerProtocol: message was null.");
+			//System.out.println("ServerProtocol["+peerNum+"]: message was null.");
 		}
 		byte[] m = new byte[message.length + b.length];
 		for (int i = 0; i < 4; i++){
@@ -194,15 +198,15 @@ public class ServerProtocol{
 
 	public Message sendBitField(){
 		//send a bitfield message
-		System.out.println("ServerProtocol: Trying to send a Bitfield");
+		//System.out.println("ServerProtocol["+peerNum+"]: Trying to send a Bitfield");
 		if(!myBitField.empty()){
 			this.myServerState = ServerState.CONNECTIONOPEN;
 			byte[] b = myBitField.toByteArray();
 			
-			System.out.println("ServerProtocol: Bitfield sent");
+			//System.out.println("ServerProtocol["+peerNum+"]: Bitfield sent");
 			return new Message(b.length + 1, 5, b);	
 		}
-		System.out.println("ServerProtocol: Bitfield empty");
+		//System.out.println("ServerProtocol["+peerNum+"]: Bitfield empty");
 		return null;
 	}
 

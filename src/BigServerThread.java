@@ -17,8 +17,9 @@ public class BigServerThread extends Thread {
 	private int portNumber;
 	private ArrayList<ServerThread> servers;
 	private ArrayList<ClientRateInfo> rates;
+	private RandomAccess file;
 
-	public BigServerThread(int peernum, int numprefneighbor, int unchoking, int opunchoking, String filename, int filesize, int piecesize, int portnum, BitField b, ArrayList<ClientRateInfo> r){
+	public BigServerThread(int peernum, int numprefneighbor, int unchoking, int opunchoking, String filename, int filesize, int piecesize, int portnum, BitField b, ArrayList<ClientRateInfo> r, RandomAccess f){
                 myPeerNum = peernum;
                 numberOfPreferredNeighbors= numprefneighbor;
                 unchokingInterval = unchoking;
@@ -29,6 +30,7 @@ public class BigServerThread extends Thread {
 		portNumber = portnum;
 		myBitField = b;
 		rates = r;
+		file = f;
 
 		//initialize an arrayList to store the server threads
 		servers = new ArrayList<ServerThread>();
@@ -41,7 +43,7 @@ public class BigServerThread extends Thread {
 
 	ChokingThread c = new ChokingThread(servers, unchokingInterval, optimisticUnchokingInterval, numberOfPreferredNeighbors, rates);
 	executor.execute(c);
-	System.out.println("BigServerThread: Launched the ChokingThread");
+	//System.out.println("BigServerThread: Launched the ChokingThread");
         
       while(true){ 
 	ServerSocket serverSocket = null; 
@@ -54,21 +56,21 @@ public class BigServerThread extends Thread {
         try 
          {
             serverSocket = new ServerSocket(portNumber);
-		System.out.println("BigServerThread: about to stall on accept");
+		//System.out.println("BigServerThread: about to stall on accept");
             clientSocket = serverSocket.accept();
-		System.out.println("BigServerThread: accepted");
+		//System.out.println("BigServerThread: accepted");
 	    i = clientSocket.getInputStream();
             in = new DataInputStream(i); 
 	    while(true){
 		if(in.available()>0){
-			System.out.println("BigServerThread; got something....");
+			//System.out.println("BigServerThread; got something....");
 			byte buffer[] = new byte[in.available()];
 			in.readFully(buffer);
 			Message m = new Message(buffer);
-			System.out.println("BigServerThread: recieved a message from "+m.getPeerID());
+			//System.out.println("BigServerThread: recieved a message from "+m.getPeerID());
 			if(m.getPeerID()!=0){
-				ServerThread s = new ServerThread(clientSocket, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, myBitField, m);
-			System.out.println("BigServerThread: passing the client off to its server");
+				ServerThread s = new ServerThread(clientSocket, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, myBitField, m, file);
+			//System.out.println("BigServerThread: passing the client off to its server");
 				servers.add(s);
 				executor.execute(s);
 				break;

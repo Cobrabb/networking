@@ -14,6 +14,7 @@ public class ClientProtocol{
 	private BitField serverBitField;
 	private BitField myBitField;
 	private ClientRateInfo myRate;
+	private RandomAccess file;
 
 	//enum for the Client State
 	private enum ClientState{
@@ -25,7 +26,7 @@ public class ClientProtocol{
 	private ClientState myClientState;
 	
 	
-	public ClientProtocol(int tpeernum, int peerNum, int filesize, int piecesize, String fName, BitField mybField, ClientRateInfo c){
+	public ClientProtocol(int tpeernum, int peerNum, int filesize, int piecesize, String fName, BitField mybField, ClientRateInfo c, RandomAccess r){
 		this.myPeerNum = peerNum;
 		myClientState = ClientState.NONE;
 		interested = false;
@@ -36,6 +37,7 @@ public class ClientProtocol{
 		myBitField = mybField;
 		myRate = c;
 		thisPeerNum = tpeernum;
+		file = r;
 		
 		requestOut = false; 
 	}
@@ -46,7 +48,7 @@ public class ClientProtocol{
 
 	// method for message handling
 	public Message processInput(Message in){
-		//System.out.println("ClientProtocol: Got: "+in.getType());
+		System.out.println("ClientProtocol["+myPeerNum+"]: Got: "+in.getType());
 		if(in.getType()==8){
 			return handShakeIn();
 		}
@@ -129,7 +131,7 @@ public class ClientProtocol{
 		for(int i = 0; i < b.length; i++){
 			index = (index << 8) + (b[i] & 0xff);
 		}
-		System.out.println("ClientProtocol: The server claims that it has piece "+index);
+		//System.out.println("ClientProtocol["+myPeerNum+"]: The server claims that it has piece "+index);
 		serverBitField.toggleBitOn(index);
 		//calc interested or not interested
 		boolean oldint = interested; //this will still be necesary once real interested logic is in place
@@ -176,8 +178,7 @@ public class ClientProtocol{
 			newPiece[i] = b[i+4];
 		}
 		
-		RandomAccess r = new RandomAccess(pieceSize, fileName);
-		r.writeRAF(newPiece, index);
+		file.writeRAF(newPiece, index);
 		
 		requestOut = false;
 
@@ -215,7 +216,7 @@ public class ClientProtocol{
 	public Message sendRequest(){
 		requestOut = true;
 		int i = myBitField.getFirstHas(serverBitField);
-		System.out.println("ClientProtocol: About to send a request... here is what I am requesting: "+i);
+		//System.out.println("ClientProtocol["+myPeerNum+"]: About to send a request... here is what I am requesting: "+i);
 		byte[] pnum = ByteBuffer.allocate(4).putInt(i).array();
 		return new Message(5, 6, pnum);
 	}
@@ -230,7 +231,10 @@ public class ClientProtocol{
 
 	//methods for calculation
 	public void calculateInterest(){
-		int get = myBitField.getFirstHas(serverBitField);
+		int get = -1;
+		if(serverBitField!=null){
+			get = myBitField.getFirstHas(serverBitField);
+		}
 		if(get>=0){
 			interested = true;
 		}else{

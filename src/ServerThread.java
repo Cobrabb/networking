@@ -15,12 +15,13 @@ public class ServerThread extends Thread {
 	private int optimisticUnchokingInterval;
 	private Message init;
 	private ServerProtocol pro;
+	private RandomAccess file;
 
 	public int getPeerNum(){
 		return this.peerNum;
 	}
 
-	public ServerThread(Socket s, int neighbors, int unchoking, int opunchoking,  String filename, int filesize, int piecesize, BitField b, Message m){
+	public ServerThread(Socket s, int neighbors, int unchoking, int opunchoking,  String filename, int filesize, int piecesize, BitField b, Message m, RandomAccess f){
                 fileName = filename;
                 fileSize = filesize;
                 pieceSize = piecesize;
@@ -29,6 +30,7 @@ public class ServerThread extends Thread {
 		unchokingInterval = unchoking;
 		optimisticUnchokingInterval = opunchoking;
 		init = m;
+		file = f;
 
 		//shared with all servers
 		myBitField = b;
@@ -44,6 +46,13 @@ public class ServerThread extends Thread {
 		return false;
 	}
 
+	public boolean getInterested(){
+		if(pro!=null){
+			return pro.getChoked();
+		}
+		return false;	
+	}
+
 	public void setChoked(boolean b){
 		if(pro!=null){
 			pro.setChoked(b);
@@ -52,7 +61,7 @@ public class ServerThread extends Thread {
 
     public void run() {
         
-	pro = new ServerProtocol(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, myBitField);
+	pro = new ServerProtocol(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, myBitField, file);
       
         OutputStream o = null;
 	InputStream i = null; 
@@ -87,10 +96,10 @@ public class ServerThread extends Thread {
 		long interval = System.currentTimeMillis()-openTime;
 		pass = pro.tick(interval);
 		if(pass != null){	
-			System.out.println("ServerThread: About to send a ticking message "+pass.getType());
+			//System.out.println("ServerThread: About to send a ticking message "+pass.getType());
 			byte[] b = pass.createMessage();
 			out.write(b, 0, b.length);
-			System.out.println("ServerThread: Sent a ticking message");
+			//System.out.println("ServerThread: Sent a ticking message");
 		}
             }
         } catch (IOException e) {

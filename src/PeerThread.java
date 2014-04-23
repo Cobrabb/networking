@@ -24,6 +24,7 @@ public class PeerThread extends Thread{
 	private int portNum;
 	private BitField myBitField;
 	private ArrayList<ClientRateInfo> rates;
+	private static RandomAccess file;
 
 	//Client and Server
 	private BigServerThread server;
@@ -91,18 +92,20 @@ public class PeerThread extends Thread{
 		fileSize = Integer.parseInt(params[4]);	
 		pieceSize = Integer.parseInt(params[5]);	
 
-		System.out.println("PeerThread: Initializing the bitfield with hasfile: "+hasFile);
+		file = new RandomAccess(pieceSize, fileName);
+
+		//System.out.println("PeerThread: Initializing the bitfield with hasfile: "+hasFile);
 		myBitField = new BitField(fileSize, pieceSize, hasFile);
 		//myBitField = new BitField((int)Math.ceil((float)fileSize/(float)pieceSize), hasFile);
 
-		server = new BigServerThread(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, portNum, myBitField, rates);	
+		server = new BigServerThread(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, portNum, myBitField, rates, file);	
 
 		clients = new ArrayList<ClientThread>();
 		for(int i=0; i<peers.size(); i++){
 			ClientRateInfo info = new ClientRateInfo();
 			info.rate = 0;
 			info.peerNum = peers.get(i).peerNum;
-			ClientThread c = new ClientThread(peerNum, peers.get(i).peerNum, fileSize, pieceSize, peers.get(i).portNum, peers.get(i).hostName,fileName, myBitField, info);
+			ClientThread c = new ClientThread(peerNum, peers.get(i).peerNum, fileSize, pieceSize, peers.get(i).portNum, peers.get(i).hostName,fileName, myBitField, info, file);
 			clients.add(c);
 			rates.add(info);
 		}
@@ -147,7 +150,7 @@ public class PeerThread extends Thread{
 			executor.execute(clients.get(i));
 		}
 
-		System.out.println("PeerThread: Launched all peers");
+		//System.out.println("PeerThread: Launched all peers");
 		
 	}
 }

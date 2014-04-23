@@ -17,7 +17,6 @@ public class BitField{
 	public BitField(int filesize, int piecesize, boolean has){
 		int bigSize = ((int)Math.ceil((float)filesize/(float)piecesize));
 		this.size = (int)(Math.ceil(bigSize/8.0));
-		System.out.println("Intialized the Bitfield with Size: "+size);
 		this.content = new ArrayList<Byte>();
 		
 		byte on = 0;
