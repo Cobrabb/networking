@@ -25,6 +25,7 @@ public class PeerThread extends Thread{
 	private BitField myBitField;
 	private ArrayList<ClientRateInfo> rates;
 	private static RandomAccess file;
+	private static PrintWriter log;
 
 	//Client and Server
 	private BigServerThread server;
@@ -88,24 +89,32 @@ public class PeerThread extends Thread{
 		numberOfPreferredNeighbors = Integer.parseInt(params[0]);	
 		unchokingInterval = Integer.parseInt(params[1]);	
 		optimisticUnchokingInterval = Integer.parseInt(params[2]);
-		fileName = params[3];	
+		fileName = "peer_"+peerNum+"/"+params[3];	
 		fileSize = Integer.parseInt(params[4]);	
 		pieceSize = Integer.parseInt(params[5]);	
 
 		file = new RandomAccess(pieceSize, fileName);
+	
+		try{	
+			log = new PrintWriter(new File("log_peer_"+peerNum+".log"));
+		}
+		catch(Exception e){
+
+		}	
 
 		//System.out.println("PeerThread: Initializing the bitfield with hasfile: "+hasFile);
 		myBitField = new BitField(fileSize, pieceSize, hasFile);
 		//myBitField = new BitField((int)Math.ceil((float)fileSize/(float)pieceSize), hasFile);
 
-		server = new BigServerThread(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, portNum, myBitField, rates, file);	
+		server = new BigServerThread(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, portNum, myBitField, rates, file, log);
 
 		clients = new ArrayList<ClientThread>();
 		for(int i=0; i<peers.size(); i++){
 			ClientRateInfo info = new ClientRateInfo();
 			info.rate = 0;
 			info.peerNum = peers.get(i).peerNum;
-			ClientThread c = new ClientThread(peerNum, peers.get(i).peerNum, fileSize, pieceSize, peers.get(i).portNum, peers.get(i).hostName,fileName, myBitField, info, file);
+			boolean done = false;
+			ClientThread c = new ClientThread(done, peerNum, peers.get(i).peerNum, fileSize, pieceSize, peers.get(i).portNum, peers.get(i).hostName,fileName, myBitField, info, file, log);
 			clients.add(c);
 			rates.add(info);
 		}

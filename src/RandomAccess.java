@@ -29,7 +29,7 @@ public class RandomAccess {
 		try{
 			raf = new RandomAccessFile(fileName, "rw");
 		}catch(Exception e){
-			System.out.println("...");
+			System.out.println(fileName);
 		}
 	}
 	

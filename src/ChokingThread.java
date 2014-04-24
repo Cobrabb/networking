@@ -1,4 +1,6 @@
-import java.util.ArrayList;
+import java.io.*;
+import java.util.*;
+
 public class ChokingThread extends Thread{
 
 	private ArrayList<ServerThread> servers;
@@ -10,8 +12,10 @@ public class ChokingThread extends Thread{
 	private long openTime;
 	private ArrayList<ClientRateInfo> rates;
 	private PreferredNeighborList preferredNeighbors;
+	private static PrintWriter log;
+	private int myPeerNum;
 
-	public ChokingThread(ArrayList<ServerThread> s, int unchoking, int optimisticunchoking, int numprefneighbor, ArrayList<ClientRateInfo> r){
+	public ChokingThread(int myPeerNum, ArrayList<ServerThread> s, int unchoking, int optimisticunchoking, int numprefneighbor, ArrayList<ClientRateInfo> r, PrintWriter log){
 		servers = s;
 		unchokingInterval = unchoking*1000;
 		optimisticUnchokingInterval = optimisticunchoking*1000;
@@ -19,6 +23,8 @@ public class ChokingThread extends Thread{
 	    	openTime = System.currentTimeMillis();
 		rates = r;
 		preferredNeighbors = new PreferredNeighborList(numprefneighbor);
+		this.log = log;
+		this.myPeerNum = myPeerNum;
 	}
 
 	public void run(){
@@ -62,6 +68,8 @@ public class ChokingThread extends Thread{
 
 					
 				lastUnchoked = currentTime-openTime + unchokingInterval;
+				log.println(new Date().toString()+": Peer "+myPeerNum+" has the preferred neighbors "+preferredNeighbors.getIDs());
+				log.flush();
 				
 			}
 			if(currentTime-openTime >= lastOptimisticUnchoked){
@@ -84,6 +92,8 @@ public class ChokingThread extends Thread{
 
 				lastOptimisticUnchoked = currentTime-openTime + optimisticUnchokingInterval;
 
+				log.println(new Date().toString()+": Peer "+myPeerNum+" has the optimistically-unchoked neighbor "+randomPeerNum);
+				log.flush();
 			}
 
 		}

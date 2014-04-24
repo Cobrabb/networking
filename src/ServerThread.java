@@ -1,6 +1,7 @@
 import java.net.*;
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.*;
 
 public class ServerThread extends Thread {
 
@@ -16,12 +17,14 @@ public class ServerThread extends Thread {
 	private Message init;
 	private ServerProtocol pro;
 	private RandomAccess file;
+	private PrintWriter log;
+	private int myPeerNum;
 
 	public int getPeerNum(){
 		return this.peerNum;
 	}
 
-	public ServerThread(Socket s, int neighbors, int unchoking, int opunchoking,  String filename, int filesize, int piecesize, BitField b, Message m, RandomAccess f){
+	public ServerThread(int myPeerNum, Socket s, int neighbors, int unchoking, int opunchoking,  String filename, int filesize, int piecesize, BitField b, Message m, RandomAccess f, PrintWriter log){
                 fileName = filename;
                 fileSize = filesize;
                 pieceSize = piecesize;
@@ -31,6 +34,8 @@ public class ServerThread extends Thread {
 		optimisticUnchokingInterval = opunchoking;
 		init = m;
 		file = f;
+		this.log = log;
+		this.myPeerNum = myPeerNum;
 
 		//shared with all servers
 		myBitField = b;
@@ -61,7 +66,7 @@ public class ServerThread extends Thread {
 
     public void run() {
         
-	pro = new ServerProtocol(peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, myBitField, file);
+	pro = new ServerProtocol(myPeerNum, peerNum, numberOfPreferredNeighbors, unchokingInterval, optimisticUnchokingInterval, fileName, fileSize, pieceSize, myBitField, file, log);
       
         OutputStream o = null;
 	InputStream i = null; 

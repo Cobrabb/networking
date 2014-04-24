@@ -1,4 +1,6 @@
 import java.nio.ByteBuffer;
+import java.util.*;
+import java.io.*;
 
 
 public class ClientProtocol{
@@ -15,6 +17,9 @@ public class ClientProtocol{
 	private BitField myBitField;
 	private ClientRateInfo myRate;
 	private RandomAccess file;
+	private static PrintWriter log;
+	private static boolean done;
+	
 
 	//enum for the Client State
 	private enum ClientState{
@@ -26,7 +31,7 @@ public class ClientProtocol{
 	private ClientState myClientState;
 	
 	
-	public ClientProtocol(int tpeernum, int peerNum, int filesize, int piecesize, String fName, BitField mybField, ClientRateInfo c, RandomAccess r){
+	public ClientProtocol(boolean done, int tpeernum, int peerNum, int filesize, int piecesize, String fName, BitField mybField, ClientRateInfo c, RandomAccess r, PrintWriter log){
 		this.myPeerNum = peerNum;
 		myClientState = ClientState.NONE;
 		interested = false;
@@ -38,6 +43,8 @@ public class ClientProtocol{
 		myRate = c;
 		thisPeerNum = tpeernum;
 		file = r;
+		this.log = log;
+		this.done = done;
 		
 		requestOut = false; 
 	}
@@ -75,6 +82,13 @@ public class ClientProtocol{
 
 	//this happens every so often and does not block on server messages
 	public Message tick(long interval){
+
+		if(myBitField.done()&&!done){
+			log.println(new Date().toString()+": Peer "+thisPeerNum+" has download the complete file.");
+			log.flush();
+			System.out.println("DONE!");
+			done = true;	
+		}
 		if(myClientState!=ClientState.CONNECTIONOPEN) return null;
 		if(!choked&&!requestOut&&interested){
 			return sendRequest();
@@ -132,6 +146,9 @@ public class ClientProtocol{
 			index = (index << 8) + (b[i] & 0xff);
 		}
 		//System.out.println("ClientProtocol["+myPeerNum+"]: The server claims that it has piece "+index);
+		log.println(new Date().toString()+": Peer "+thisPeerNum+" recieved a 'have' message from  "+myPeerNum+" for the piece "+index);
+		log.flush();
+
 		serverBitField.toggleBitOn(index);
 		//calc interested or not interested
 		boolean oldint = interested; //this will still be necesary once real interested logic is in place
@@ -154,10 +171,14 @@ public class ClientProtocol{
 	public void chokeIn(){
 		choked = true;
 		requestOut = false; //if a choke message comes in, the previously sent request is invalid
+		log.println(new Date().toString()+": Peer "+thisPeerNum+" is choked by "+myPeerNum);
+		log.flush();
 	}
 
 	public void unchokeIn(){
 		choked = false;
+		log.println(new Date().toString()+": Peer "+thisPeerNum+" is unchoked by "+myPeerNum);
+		log.flush();
 	}
 
 	public Message pieceIn(Message in){
@@ -182,6 +203,8 @@ public class ClientProtocol{
 		
 		requestOut = false;
 
+		log.println(new Date().toString()+": Peer "+thisPeerNum+" has downloaded the piece  "+index+" from "+myPeerNum+". Now the number of pieces it has is "+myBitField.getNum());
+		log.flush();
 		calculateInterest();
 		if (!interested){
 			return new Message(1, 3, null);

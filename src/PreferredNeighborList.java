@@ -13,6 +13,15 @@ public class PreferredNeighborList{
 	}
 
 
+	public String getIDs(){
+		String ids = "";
+		for(int i=0; i<currentLast; i++){
+			ids += rates[i].peerNum;
+			if(i!=currentLast-1) ids+=", ";
+		}	
+		return ids;
+	}
+
 	public void refresh(){
 		for(int i=0; i<rates.length; i++){
 			rates[i] = null;

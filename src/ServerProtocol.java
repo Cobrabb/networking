@@ -1,4 +1,5 @@
 import java.util.*;
+import java.io.*;
 import java.nio.ByteBuffer;
 
 public class ServerProtocol{
@@ -18,6 +19,8 @@ public class ServerProtocol{
 	private boolean interested; //whether or not the peer is interested in me
 	private boolean chokechange;
 	private RandomAccess file;
+	private int myPeerNum;
+	private PrintWriter log;
 
 	private enum ServerState  {
 		NONE,
@@ -26,7 +29,7 @@ public class ServerProtocol{
 	};
 	private ServerState myServerState;
 
-	public ServerProtocol(int peernum, int numprefneighbor, int unchoking, int opunchoking, String filename, int filesize, int piecesize, BitField b, RandomAccess f){
+	public ServerProtocol(int myPeerNum, int peernum, int numprefneighbor, int unchoking, int opunchoking, String filename, int filesize, int piecesize, BitField b, RandomAccess f, PrintWriter log){
 		peerNum = peernum;
 		numberOfPreferredNeighbors= numprefneighbor;
 		unchokingInterval = unchoking*1000;
@@ -37,7 +40,8 @@ public class ServerProtocol{
 		myBitField = b;
 		localBitField = new BitField(b);
 		file = f;
-
+		this.myPeerNum = myPeerNum;
+		this.log = log;
 	
 		this.myServerState = ServerState.NONE;
 
@@ -125,12 +129,17 @@ public class ServerProtocol{
 		if(myServerState==ServerState.CONNECTIONOPEN){
 			interested = true;
 		}
+	
+		log.println(new Date().toString()+": Peer "+myPeerNum+" recieved an 'interested' message from "+peerNum);
+		log.flush();
 	}
 
 	public void notInterestedIn(){
 		if(myServerState==ServerState.CONNECTIONOPEN){
 			interested = false;
 		}
+		log.println(new Date().toString()+": Peer "+myPeerNum+" recieved a 'not interested' message from "+peerNum);
+		log.flush();
 	}
 
 

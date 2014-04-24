@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 public class ClientThread extends Thread{
 
@@ -13,8 +14,10 @@ public class ClientThread extends Thread{
 	private ClientRateInfo myRate;
 	private int thisPeerNum;
 	private RandomAccess file;
+	private static PrintWriter log;
+	private static boolean done;
 	
-	public ClientThread(int tpeernum, int peernum, int filesize, int piecesize, int portnum, String thehost, String fName, BitField bitField, ClientRateInfo c, RandomAccess f){
+	public ClientThread(boolean done, int tpeernum, int peernum, int filesize, int piecesize, int portnum, String thehost, String fName, BitField bitField, ClientRateInfo c, RandomAccess f, PrintWriter log){
 		//System.out.println("ClientThread: Init");
 		thisPeerNum = tpeernum;
 		peerNum = peernum;
@@ -26,12 +29,14 @@ public class ClientThread extends Thread{
 		this.bitField = bitField;
 		myRate = c;
 		file = f;
+		this.log = log;
+		this.done = done;
 	}
 
     public  void run() {
 	
 	//System.out.println("ClientThread: Creating a handshake message");
-	ClientProtocol pro = new ClientProtocol(thisPeerNum, peerNum, fileSize, pieceSize, fileName, bitField, myRate, file);
+	ClientProtocol pro = new ClientProtocol(done, thisPeerNum, peerNum, fileSize, pieceSize, fileName, bitField, myRate, file, log);
 	Message handshake = pro.initiateContact();
 	byte[] c = handshake.createMessage();
 
@@ -47,6 +52,9 @@ public class ClientThread extends Thread{
       	  try 
        	  {
 		    clientSocket = new Socket(host, portNum);
+		log.println(new Date().toString()+": Peer "+thisPeerNum+" makes a connection to Peer "+peerNum);
+		log.flush();
+		
 		//System.out.println("ClientThread: succeed");
 		
 		    o = clientSocket.getOutputStream();

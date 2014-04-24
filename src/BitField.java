@@ -5,6 +5,8 @@ public class BitField{
 
 	int size;
 	ArrayList<Byte> content;
+	int count = 0;
+	int bigSize;
 
 	public BitField(int filesize, int piecesize){
 		this(filesize, piecesize, false);
@@ -14,8 +16,17 @@ public class BitField{
 		return this.content;
 	}
 
+	public int getNum(){
+		return count;
+	}
+
+	public boolean done(){
+		return count == bigSize+2;
+	}
+
 	public BitField(int filesize, int piecesize, boolean has){
-		int bigSize = ((int)Math.ceil((float)filesize/(float)piecesize));
+		this.bigSize = ((int)Math.floor((float)filesize/(float)piecesize));
+		System.out.println(bigSize);
 		this.size = (int)(Math.ceil(bigSize/8.0));
 		this.content = new ArrayList<Byte>();
 		
@@ -89,6 +100,7 @@ public class BitField{
 		
 		//toggles it on, if it is off. The rest of the method needs to be written still
 		byte b = content.get(contentPos);
+		if((b & (1 << bitpos)) == 0) count++;
 		b |= 1 << bitpos;
 
 		content.set(contentPos, new Byte(b));
